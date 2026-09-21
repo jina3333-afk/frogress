@@ -6,7 +6,7 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
 import { getCompletedCycleById, getCompletedCycles } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, fonts, radii, spacing, typography } from '../theme';
 
 const FRAME_INTERVAL_MS = 700;
 
@@ -43,13 +43,17 @@ export default function Highlight() {
   }
 
   const config = getDomainConfig(cycle.domain);
+  const Icon = config.icon;
   const currentEntry = cycle.entries[frameIndex];
 
   return (
     <ScreenContainer>
-      <Text style={styles.eyebrow}>
-        {config.emoji} {config.label} · {cycle.periodDays}일 하이라이트
-      </Text>
+      <View style={styles.eyebrowRow}>
+        <Icon size={15} color={colors.primary} strokeWidth={2.4} />
+        <Text style={styles.eyebrow}>
+          {config.label} · {cycle.periodDays}일 하이라이트
+        </Text>
+      </View>
       <Text style={typography.title}>{cycle.entryCount}일간의 변화</Text>
 
       <View style={styles.frameBox}>
@@ -94,11 +98,16 @@ export default function Highlight() {
 }
 
 const styles = StyleSheet.create({
-  eyebrow: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: spacing.xs,
+  },
+  eyebrow: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.primary,
   },
   frameBox: {
     marginTop: spacing.lg,
@@ -120,7 +129,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radii.pill,
   },
-  dateBadgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  dateBadgeText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 12 },
   dots: {
     flexDirection: 'row',
     flexWrap: 'wrap',

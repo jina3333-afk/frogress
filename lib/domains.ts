@@ -1,10 +1,12 @@
+import { Dumbbell, Mic, Sparkles, Tag } from 'lucide-react-native';
 import { Domain, DomainConfig } from './types';
 
 export const DOMAIN_CONFIGS: DomainConfig[] = [
   {
     domain: 'skin',
     label: '피부',
-    emoji: '✨',
+    description: '붓기·톤 변화',
+    icon: Sparkles,
     defaultPeriodDays: 30,
     mediaType: 'photo',
     captureGuide: {
@@ -15,7 +17,8 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
   {
     domain: 'exercise',
     label: '운동',
-    emoji: '💪',
+    description: '체형·자세 변화',
+    icon: Dumbbell,
     defaultPeriodDays: 90,
     mediaType: 'photo',
     captureGuide: {
@@ -26,7 +29,8 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
   {
     domain: 'voice',
     label: '보이스',
-    emoji: '🎙️',
+    description: '발성·발음 변화',
+    icon: Mic,
     defaultPeriodDays: 7,
     mediaType: 'audio',
     captureGuide: {
@@ -45,7 +49,8 @@ export function getDomainConfig(domain: Domain): DomainConfig {
   return {
     domain,
     label: domain,
-    emoji: '📌',
+    description: '나만의 기록',
+    icon: Tag,
     defaultPeriodDays: 30,
     mediaType: 'photo',
     captureGuide: {

@@ -1,3 +1,5 @@
+import { LucideIcon } from 'lucide-react-native';
+
 export type Domain = 'skin' | 'exercise' | 'voice' | string;
 
 export type MediaType = 'photo' | 'audio' | 'video';
@@ -8,7 +10,8 @@ export type GuideType = 'face_oval' | 'body_silhouette' | 'custom';
 export interface DomainConfig {
   domain: Domain;
   label: string;
-  emoji: string;
+  description: string;
+  icon: LucideIcon;
   defaultPeriodDays: 7 | 30 | 90 | number;
   mediaType: MediaType;
   captureGuide: {

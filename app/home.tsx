@@ -1,13 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
+import { PartyPopper, Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
 import { getActiveCycle, hasEntryToday } from '../lib/storage';
 import { ActiveCycle } from '../lib/types';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, fonts, radii, spacing, typography } from '../theme';
 
 export default function Home() {
   const [cycle, setCycle] = useState<ActiveCycle | null>(null);
@@ -39,6 +40,7 @@ export default function Home() {
   }
 
   const config = getDomainConfig(cycle.domain);
+  const Icon = config.icon;
   const progress = Math.min(1, cycle.entries.length / cycle.periodDays);
   const goalReached = cycle.entries.length >= cycle.periodDays;
   const daysLeft = Math.max(0, cycle.periodDays - cycle.entries.length);
@@ -48,25 +50,30 @@ export default function Home() {
     <ScreenContainer>
       <View style={styles.header}>
         <View>
-          <Text style={styles.eyebrow}>
-            {config.emoji} {config.label} 기록
-          </Text>
+          <View style={styles.eyebrowRow}>
+            <Icon size={15} color={colors.primary} strokeWidth={2.4} />
+            <Text style={styles.eyebrow}>{config.label} 기록</Text>
+          </View>
           <Text style={typography.title}>
             {cycle.entries.length}/{cycle.periodDays}일째
           </Text>
         </View>
-        <Text onPress={() => router.push('/pond')} style={styles.pondLink}>
-          🪷 연못
-        </Text>
+        <Pressable onPress={() => router.push('/pond')} style={styles.pondLink}>
+          <Waves size={16} color={colors.textMuted} strokeWidth={2.2} />
+          <Text style={styles.pondLinkText}>연못</Text>
+        </Pressable>
       </View>
 
       <View style={styles.growthCard}>
         <FrogGrowth progress={progress} size={96} />
-        <Text style={styles.growthText}>
-          {goalReached
-            ? '완전한 개구리가 되었어요! 하이라이트를 확인해보세요 🎉'
-            : `${daysLeft}일만 더 기록하면 다음 단계로 성장해요`}
-        </Text>
+        <View style={styles.growthTextRow}>
+          <Text style={styles.growthText}>
+            {goalReached
+              ? '완전한 개구리가 되었어요! 하이라이트를 확인해보세요'
+              : `${daysLeft}일만 더 기록하면 다음 단계로 성장해요`}
+          </Text>
+          {goalReached && <PartyPopper size={16} color={colors.text} strokeWidth={2.2} />}
+        </View>
       </View>
 
       <View style={styles.actionArea}>
@@ -113,17 +120,27 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: spacing.lg,
   },
-  eyebrow: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: spacing.xs,
   },
+  eyebrow: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.primary,
+  },
   pondLink: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textMuted,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingVertical: spacing.xs,
+  },
+  pondLinkText: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 15,
+    color: colors.textMuted,
   },
   growthCard: {
     backgroundColor: colors.pond,
@@ -133,11 +150,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },
+  growthTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   growthText: {
+    fontFamily: fonts.bodySemiBold,
     textAlign: 'center',
     color: colors.text,
     fontSize: 14,
-    fontWeight: '600',
   },
   actionArea: {
     marginBottom: spacing.lg,
@@ -148,6 +170,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   emptyText: {
+    fontFamily: fonts.body,
     color: colors.textMuted,
   },
   thumbRow: {
@@ -163,6 +186,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   thumbDate: {
+    fontFamily: fonts.bodyMedium,
     marginTop: spacing.xs,
     fontSize: 12,
     color: colors.textMuted,

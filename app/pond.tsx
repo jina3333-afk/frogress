@@ -1,11 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
+import { Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FrogGrowth } from '../components/FrogGrowth';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
 import { getActiveCycle, getCompletedCycles } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, fonts, radii, spacing, typography } from '../theme';
 
 export default function Pond() {
   const [cycles, setCycles] = useState<CompletedCycle[]>([]);
@@ -24,7 +26,10 @@ export default function Pond() {
     <ScreenContainer>
       <View style={styles.header}>
         <View>
-          <Text style={styles.eyebrow}>🪷 나의 연못</Text>
+          <View style={styles.eyebrowRow}>
+            <Waves size={15} color={colors.primary} strokeWidth={2.4} />
+            <Text style={styles.eyebrow}>나의 연못</Text>
+          </View>
           <Text style={typography.title}>완성된 기록 {cycles.length}개</Text>
         </View>
         {hasActive && (
@@ -36,7 +41,7 @@ export default function Pond() {
 
       {cycles.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>🐸</Text>
+          <FrogGrowth progress={1} size={64} />
           <Text style={styles.emptyText}>
             아직 완성된 기록이 없어요.{'\n'}첫 사이클을 끝내면 여기 연못에 개구리가 나타나요.
           </Text>
@@ -57,6 +62,7 @@ export default function Pond() {
 
 function PondCard({ cycle }: { cycle: CompletedCycle }) {
   const config = getDomainConfig(cycle.domain);
+  const Icon = config.icon;
   const coverUri = cycle.entries[cycle.entries.length - 1]?.rawMediaRef;
 
   return (
@@ -71,13 +77,14 @@ function PondCard({ cycle }: { cycle: CompletedCycle }) {
         <Image source={{ uri: coverUri }} style={styles.cardImage} />
       ) : (
         <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
-          <Text style={{ fontSize: 32 }}>🐸</Text>
+          <FrogGrowth progress={1} size={40} />
         </View>
       )}
       <View style={styles.cardBody}>
-        <Text style={styles.cardTitle}>
-          {config.emoji} {config.label}
-        </Text>
+        <View style={styles.cardTitleRow}>
+          <Icon size={13} color={colors.primary} strokeWidth={2.4} />
+          <Text style={styles.cardTitle}>{config.label}</Text>
+        </View>
         <Text style={styles.cardMeta}>
           {cycle.periodDays}일 · {new Date(cycle.completedAt).toLocaleDateString('ko-KR')}
         </Text>
@@ -93,15 +100,20 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: spacing.lg,
   },
-  eyebrow: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: spacing.xs,
   },
+  eyebrow: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.primary,
+  },
   backLink: {
+    fontFamily: fonts.bodySemiBold,
     fontSize: 15,
-    fontWeight: '600',
     color: colors.textMuted,
     paddingVertical: spacing.xs,
   },
@@ -111,8 +123,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
   },
-  emptyEmoji: { fontSize: 48 },
   emptyText: {
+    fontFamily: fonts.body,
     textAlign: 'center',
     color: colors.textMuted,
     fontSize: 15,
@@ -144,12 +156,18 @@ const styles = StyleSheet.create({
   cardBody: {
     padding: spacing.sm,
   },
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   cardTitle: {
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
     color: colors.text,
     fontSize: 14,
   },
   cardMeta: {
+    fontFamily: fonts.bodyMedium,
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,

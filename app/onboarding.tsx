@@ -1,12 +1,14 @@
+import { Check, LucideIcon, Plus } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { DOMAIN_CONFIGS, PERIOD_PRESETS, getDomainConfig } from '../lib/domains';
 import { markOnboarded, startNewCycle } from '../lib/storage';
 import { Domain } from '../lib/types';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, fonts, radii, spacing, typography } from '../theme';
 
 type Mode = 'new_domain' | 'change_period';
 
@@ -45,7 +47,10 @@ export default function Onboarding() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.eyebrow}>🐸 Frogress</Text>
+        <View style={styles.wordmark}>
+          <FrogGrowth progress={1} size={22} />
+          <Text style={styles.eyebrow}>Frogress</Text>
+        </View>
         <Text style={typography.title}>
           {step === 0 ? '무엇을 기록할까요?' : '얼마 동안 기록할까요?'}
         </Text>
@@ -56,19 +61,21 @@ export default function Onboarding() {
         </Text>
 
         {step === 0 && (
-          <View style={styles.grid}>
+          <View style={styles.domainList}>
             {DOMAIN_CONFIGS.map((config) => (
               <DomainCard
                 key={config.domain}
-                emoji={config.emoji}
+                icon={config.icon}
                 label={config.label}
+                description={config.description}
                 selected={domain === config.domain}
                 onPress={() => selectDomain(config.domain)}
               />
             ))}
             <DomainCard
-              emoji="➕"
+              icon={Plus}
               label="커스텀"
+              description="나만의 도메인을 직접 만들어요"
               selected={domain === 'custom'}
               onPress={() => selectDomain('custom')}
             />
@@ -137,24 +144,38 @@ export default function Onboarding() {
 }
 
 function DomainCard({
-  emoji,
+  icon: Icon,
   label,
+  description,
   selected,
   onPress,
 }: {
-  emoji: string;
+  icon: LucideIcon;
   label: string;
+  description: string;
   selected: boolean;
   onPress: () => void;
 }) {
   return (
-    <Text
+    <Pressable
       onPress={onPress}
-      style={[styles.card, selected && styles.cardSelected]}
       accessibilityRole="button"
+      style={[styles.domainCard, selected && styles.domainCardSelected]}
+      testID={`domain-card-${label}`}
     >
-      {emoji + '\n' + label}
-    </Text>
+      <View style={[styles.domainIconWrap, selected && styles.domainIconWrapSelected]}>
+        <Icon size={22} color={selected ? colors.surface : colors.primary} strokeWidth={2.2} />
+      </View>
+      <View style={styles.domainTextWrap}>
+        <Text style={[styles.domainLabel, selected && styles.domainLabelSelected]}>{label}</Text>
+        <Text style={styles.domainDescription}>{description}</Text>
+      </View>
+      {selected && (
+        <View style={styles.checkBadge}>
+          <Check size={14} color={colors.surface} strokeWidth={3} />
+        </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -168,9 +189,17 @@ function PeriodCard({
   onPress: () => void;
 }) {
   return (
-    <Text onPress={onPress} style={[styles.card, styles.periodCard, selected && styles.cardSelected]}>
-      {`${days}일`}
-    </Text>
+    <Pressable
+      onPress={onPress}
+      style={[styles.card, styles.periodCard, selected && styles.cardSelected]}
+    >
+      <Text style={[styles.cardLabel, selected && styles.cardLabelSelected]}>{`${days}일`}</Text>
+      {selected && (
+        <View style={styles.periodCheckBadge}>
+          <Check size={12} color={colors.surface} strokeWidth={3} />
+        </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -178,21 +207,82 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: spacing.lg,
   },
-  eyebrow: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
+  wordmark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     marginBottom: spacing.sm,
   },
+  eyebrow: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.primary,
+  },
   subtitle: {
+    fontFamily: fonts.body,
     marginTop: spacing.sm,
     marginBottom: spacing.lg,
     color: colors.textMuted,
     fontSize: 15,
   },
   body: {
+    fontFamily: fonts.body,
     fontSize: 16,
     color: colors.text,
+  },
+  domainList: {
+    gap: spacing.sm,
+  },
+  domainCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  domainCardSelected: {
+    borderWidth: 2,
+    borderColor: colors.selectedBorder,
+    backgroundColor: colors.selectedBg,
+  },
+  domainIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.pond,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  domainIconWrapSelected: {
+    backgroundColor: colors.primary,
+  },
+  domainTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  domainLabel: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 16,
+    color: colors.text,
+  },
+  domainLabelSelected: {
+    color: colors.primaryDark,
+  },
+  domainDescription: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  checkBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.selectedBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   grid: {
     flexDirection: 'row',
@@ -206,22 +296,39 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    textAlign: 'center',
-    textAlignVertical: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardLabel: {
+    fontFamily: fonts.bodySemiBold,
     fontSize: 16,
-    fontWeight: '600',
     color: colors.text,
-    overflow: 'hidden',
+  },
+  cardLabelSelected: {
+    color: colors.primaryDark,
   },
   periodCard: {
     width: '31%',
     aspectRatio: 1.4,
   },
+  periodCheckBadge: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.selectedBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.pond,
+    borderWidth: 2,
+    borderColor: colors.selectedBorder,
+    backgroundColor: colors.selectedBg,
   },
   input: {
+    fontFamily: fonts.body,
     width: '100%',
     marginTop: spacing.sm,
     borderWidth: 1.5,
@@ -244,6 +351,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   periodInput: {
+    fontFamily: fonts.body,
     borderBottomWidth: 1.5,
     borderColor: colors.primary,
     minWidth: 60,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 
 interface Props {
   label: string;
@@ -71,8 +71,8 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   label: {
+    fontFamily: fonts.bodyBold,
     fontSize: 16,
-    fontWeight: '700',
   },
   labelPrimary: {
     color: '#FFFFFF',

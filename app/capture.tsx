@@ -1,5 +1,6 @@
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
+import { Lightbulb } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { CaptureGuideOverlay } from '../components/CaptureGuideOverlay';
@@ -14,7 +15,7 @@ import {
   getActiveCycle,
 } from '../lib/storage';
 import { Entry } from '../lib/types';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, fonts, radii, spacing, typography } from '../theme';
 
 export default function Capture() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -126,7 +127,8 @@ export default function Capture() {
         <CaptureGuideOverlay guideType={guide.guideType} />
         {config.captureGuide.lightingCheck && (
           <View style={styles.tipBanner}>
-            <Text style={styles.tipText}>💡 밝은 곳에서 정면을 향해 촬영해주세요</Text>
+            <Lightbulb size={14} color="#fff" strokeWidth={2.2} />
+            <Text style={styles.tipText}>밝은 곳에서 정면을 향해 촬영해주세요</Text>
           </View>
         )}
         <View style={styles.controls}>
@@ -156,6 +158,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   permissionBody: {
+    fontFamily: fonts.body,
     textAlign: 'center',
     color: colors.textMuted,
     marginBottom: spacing.sm,
@@ -164,12 +167,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.xl,
     alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: 'rgba(0,0,0,0.55)',
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
-  tipText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  tipText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 13 },
   controls: {
     position: 'absolute',
     bottom: spacing.xl,
@@ -180,7 +186,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
   },
-  cancelText: { color: '#fff', fontSize: 15, fontWeight: '600', width: 60 },
+  cancelText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 15, width: 60 },
   controlsSpacer: { width: 60 },
   shutterRing: {
     width: 76,
@@ -211,7 +217,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radii.pill,
   },
-  processingText: { fontWeight: '600', color: colors.text },
+  processingText: { fontFamily: fonts.bodySemiBold, color: colors.text },
   previewActions: {
     position: 'absolute',
     bottom: spacing.xl,

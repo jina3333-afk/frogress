@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { PartyPopper, Waves } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
 import { startNewCycle } from '../lib/storage';
-import { colors, spacing, typography } from '../theme';
+import { colors, fonts, spacing, typography } from '../theme';
 
 export default function Transition() {
   const { domain, periodDays } = useLocalSearchParams<{ domain: string; periodDays: string }>();
@@ -21,7 +22,10 @@ export default function Transition() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.eyebrow}>🎉 한 사이클 완주!</Text>
+      <View style={styles.eyebrowRow}>
+        <PartyPopper size={15} color={colors.primary} strokeWidth={2.4} />
+        <Text style={styles.eyebrow}>한 사이클 완주!</Text>
+      </View>
       <Text style={typography.title}>다음엔 어떻게 할까요?</Text>
       <Text style={styles.subtitle}>
         {config.label} 기록이 연못에 저장됐어요. 계속 이어가볼까요?
@@ -47,21 +51,28 @@ export default function Transition() {
         />
       </View>
 
-      <Text style={styles.pondLink} onPress={() => router.replace('/pond')}>
-        🪷 연못에서 지금까지의 기록 보기
-      </Text>
+      <Pressable style={styles.pondLink} onPress={() => router.replace('/pond')}>
+        <Waves size={15} color={colors.textMuted} strokeWidth={2.2} />
+        <Text style={styles.pondLinkText}>연못에서 지금까지의 기록 보기</Text>
+      </Pressable>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  eyebrow: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: spacing.xs,
   },
+  eyebrow: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.primary,
+  },
   subtitle: {
+    fontFamily: fonts.body,
     marginTop: spacing.sm,
     marginBottom: spacing.xl,
     color: colors.textMuted,
@@ -72,8 +83,14 @@ const styles = StyleSheet.create({
   },
   pondLink: {
     marginTop: spacing.xl,
-    textAlign: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  pondLinkText: {
+    fontFamily: fonts.bodySemiBold,
     color: colors.textMuted,
-    fontWeight: '600',
+    fontSize: 14,
   },
 });
