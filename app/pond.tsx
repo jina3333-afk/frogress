@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
 import { getActiveCycle, getCompletedCycles } from '../lib/storage';
@@ -60,11 +60,12 @@ function PondCard({ cycle }: { cycle: CompletedCycle }) {
   const coverUri = cycle.entries[cycle.entries.length - 1]?.rawMediaRef;
 
   return (
-    <View
+    <Pressable
       style={styles.card}
-      onTouchEnd={() =>
+      onPress={() =>
         router.push({ pathname: '/highlight', params: { cycleId: cycle.id, mode: 'replay' } })
       }
+      testID="pond-card"
     >
       {coverUri ? (
         <Image source={{ uri: coverUri }} style={styles.cardImage} />
@@ -81,7 +82,7 @@ function PondCard({ cycle }: { cycle: CompletedCycle }) {
           {cycle.periodDays}일 · {new Date(cycle.completedAt).toLocaleDateString('ko-KR')}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

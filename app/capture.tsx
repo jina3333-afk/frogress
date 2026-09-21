@@ -134,7 +134,12 @@ export default function Capture() {
             취소
           </Text>
           <View style={styles.shutterRing}>
-            <Text onPress={takePhoto} style={styles.shutter} accessibilityRole="button" />
+            <Text
+              onPress={takePhoto}
+              style={styles.shutter}
+              accessibilityRole="button"
+              testID="capture-shutter"
+            />
           </View>
           <View style={styles.controlsSpacer} />
         </View>
