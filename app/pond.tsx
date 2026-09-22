@@ -1,9 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { ThumbnailImage } from '../components/ThumbnailImage';
 import { getDomainConfig } from '../lib/domains';
 import { getActiveCycle, getCompletedCycles } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
@@ -73,13 +74,7 @@ function PondCard({ cycle }: { cycle: CompletedCycle }) {
       }
       testID="pond-card"
     >
-      {coverUri ? (
-        <Image source={{ uri: coverUri }} style={styles.cardImage} />
-      ) : (
-        <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
-          <FrogGrowth progress={1} size={40} />
-        </View>
-      )}
+      <ThumbnailImage uri={coverUri} style={styles.cardImage} iconSize={28} />
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
           <Icon size={13} color={colors.textMuted} strokeWidth={2.4} />
@@ -147,11 +142,6 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: colors.surface2,
-  },
-  cardImagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   cardBody: {
     padding: spacing.sm,

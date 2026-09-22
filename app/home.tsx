@@ -1,10 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
 import { PartyPopper, Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { ThumbnailImage } from '../components/ThumbnailImage';
 import { getDomainConfig } from '../lib/domains';
 import { getActiveCycle, hasEntryToday } from '../lib/storage';
 import { ActiveCycle } from '../lib/types';
@@ -101,7 +102,7 @@ export default function Home() {
           contentContainerStyle={styles.thumbRow}
           renderItem={({ item }) => (
             <View style={styles.thumbWrap}>
-              <Image source={{ uri: item.rawMediaRef }} style={styles.thumb} />
+              <ThumbnailImage uri={item.rawMediaRef} style={styles.thumb} iconSize={22} />
               <Text style={styles.thumbDate}>
                 {new Date(item.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
               </Text>
@@ -183,7 +184,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: radii.md,
-    backgroundColor: colors.surface2,
   },
   thumbDate: {
     fontFamily: fonts.bodyMedium,
