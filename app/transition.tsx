@@ -23,7 +23,7 @@ export default function Transition() {
   return (
     <ScreenContainer>
       <View style={styles.eyebrowRow}>
-        <PartyPopper size={15} color={colors.primary} strokeWidth={2.4} />
+        <PartyPopper size={15} color={colors.textMuted} strokeWidth={2.4} />
         <Text style={styles.eyebrow}>한 사이클 완주!</Text>
       </View>
       <Text style={typography.title}>다음엔 어떻게 할까요?</Text>
@@ -52,7 +52,7 @@ export default function Transition() {
       </View>
 
       <Pressable style={styles.pondLink} onPress={() => router.replace('/pond')}>
-        <Waves size={15} color={colors.textMuted} strokeWidth={2.2} />
+        <Waves size={15} color={colors.pond} strokeWidth={2.2} />
         <Text style={styles.pondLinkText}>연못에서 지금까지의 기록 보기</Text>
       </Pressable>
     </ScreenContainer>
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: fonts.bodyBold,
     fontSize: 14,
-    color: colors.primary,
+    color: colors.textMuted,
   },
   subtitle: {
     fontFamily: fonts.body,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   pondLinkText: {
     fontFamily: fonts.bodySemiBold,
-    color: colors.textMuted,
+    color: colors.pond,
     fontSize: 14,
   },
 });

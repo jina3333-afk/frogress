@@ -49,7 +49,7 @@ export default function Highlight() {
   return (
     <ScreenContainer>
       <View style={styles.eyebrowRow}>
-        <Icon size={15} color={colors.primary} strokeWidth={2.4} />
+        <Icon size={15} color={colors.textMuted} strokeWidth={2.4} />
         <Text style={styles.eyebrow}>
           {config.label} · {cycle.periodDays}일 하이라이트
         </Text>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: fonts.bodyBold,
     fontSize: 14,
-    color: colors.primary,
+    color: colors.textMuted,
   },
   frameBox: {
     marginTop: spacing.lg,
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   dotActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.speciesAccent,
     width: 16,
   },
   footer: {

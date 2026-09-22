@@ -51,7 +51,7 @@ export default function Home() {
       <View style={styles.header}>
         <View>
           <View style={styles.eyebrowRow}>
-            <Icon size={15} color={colors.primary} strokeWidth={2.4} />
+            <Icon size={15} color={colors.textMuted} strokeWidth={2.4} />
             <Text style={styles.eyebrow}>{config.label} 기록</Text>
           </View>
           <Text style={typography.title}>
@@ -59,7 +59,7 @@ export default function Home() {
           </Text>
         </View>
         <Pressable onPress={() => router.push('/pond')} style={styles.pondLink}>
-          <Waves size={16} color={colors.textMuted} strokeWidth={2.2} />
+          <Waves size={16} color={colors.pond} strokeWidth={2.2} />
           <Text style={styles.pondLinkText}>연못</Text>
         </Pressable>
       </View>
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: fonts.bodyBold,
     fontSize: 14,
-    color: colors.primary,
+    color: colors.textMuted,
   },
   pondLink: {
     flexDirection: 'row',
@@ -140,10 +140,10 @@ const styles = StyleSheet.create({
   pondLinkText: {
     fontFamily: fonts.bodySemiBold,
     fontSize: 15,
-    color: colors.textMuted,
+    color: colors.pond,
   },
   growthCard: {
-    backgroundColor: colors.pond,
+    backgroundColor: colors.speciesAccentTint,
     borderRadius: radii.lg,
     padding: spacing.lg,
     alignItems: 'center',

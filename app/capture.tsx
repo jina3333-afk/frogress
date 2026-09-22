@@ -104,7 +104,7 @@ export default function Capture() {
         <Image source={{ uri: photoUri }} style={styles.previewImage} />
         {processing ? (
           <View style={styles.processingRow}>
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={colors.textMuted} />
             <Text style={styles.processingText}>정렬 보정 중...</Text>
           </View>
         ) : (

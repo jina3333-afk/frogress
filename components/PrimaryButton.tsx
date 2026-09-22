@@ -28,7 +28,7 @@ export function PrimaryButton({ label, onPress, variant = 'primary', disabled, l
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? '#fff' : colors.primary} />
+        <ActivityIndicator color={isPrimary ? '#fff' : colors.speciesAccent} />
       ) : (
         <Text
           style={[
@@ -54,12 +54,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primary: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.speciesAccent,
   },
   secondary: {
     backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderColor: colors.speciesAccent,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   labelSecondary: {
-    color: colors.primary,
+    color: colors.speciesAccent,
   },
   labelGhost: {
     color: colors.textMuted,

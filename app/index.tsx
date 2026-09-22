@@ -21,7 +21,7 @@ export default function SplashRedirect() {
   return (
     <View style={styles.container}>
       <FrogGrowth progress={0.5} size={96} />
-      <ActivityIndicator style={styles.spinner} color={colors.primary} />
+      <ActivityIndicator style={styles.spinner} color={colors.textMuted} />
     </View>
   );
 }

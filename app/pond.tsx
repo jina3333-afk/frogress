@@ -27,7 +27,7 @@ export default function Pond() {
       <View style={styles.header}>
         <View>
           <View style={styles.eyebrowRow}>
-            <Waves size={15} color={colors.primary} strokeWidth={2.4} />
+            <Waves size={15} color={colors.pond} strokeWidth={2.4} />
             <Text style={styles.eyebrow}>나의 연못</Text>
           </View>
           <Text style={typography.title}>완성된 기록 {cycles.length}개</Text>
@@ -82,7 +82,7 @@ function PondCard({ cycle }: { cycle: CompletedCycle }) {
       )}
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
-          <Icon size={13} color={colors.primary} strokeWidth={2.4} />
+          <Icon size={13} color={colors.textMuted} strokeWidth={2.4} />
           <Text style={styles.cardTitle}>{config.label}</Text>
         </View>
         <Text style={styles.cardMeta}>
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: fonts.bodyBold,
     fontSize: 14,
-    color: colors.primary,
+    color: colors.pond,
   },
   backLink: {
     fontFamily: fonts.bodySemiBold,

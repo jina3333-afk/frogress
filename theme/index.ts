@@ -1,18 +1,43 @@
-export const colors = {
-  background: '#F3FAF4',
+import { lerpColor } from '../lib/color';
+
+/**
+ * 뉴트럴 베이스 — 배경/카드/테두리/텍스트. 그린 틴트 없이 크림·오프화이트 톤으로 고정.
+ * 종(species)이 바뀌어도 이 톤들은 변하지 않는다.
+ */
+const neutral = {
+  background: '#FAF7F1',
   surface: '#FFFFFF',
-  pond: '#E3F3E9',
-  primary: '#2E9E5B',
-  primaryDark: '#1F7A44',
-  selectedBg: '#CDEEDA',
-  selectedBorder: '#1F7A44',
-  accent: '#FFC94A',
-  text: '#1E2B23',
-  textMuted: '#6B7C71',
-  border: '#DCEBDF',
+  border: '#E7E1D3',
+  text: '#2A2822',
+  textMuted: '#7A7568',
+};
+
+/**
+ * 브랜드 고정 컬러. 로고(Frogress 워드마크)와 "연못" 내비게이션처럼
+ * 어떤 종을 기르든 항상 같은 톤으로 유지되는 요소 전용.
+ */
+const POND = '#1F7A8C';
+
+/**
+ * 현재 종(개구리)의 액센트 컬러. 선택 상태 / 진행률(FrogGrowth) / Primary 버튼에서만 쓴다.
+ * 다른 종을 추가할 때는 이 값 하나만 바꾸면 파생 톤(dark/tint)까지 자동으로 따라온다.
+ */
+const SPECIES_ACCENT = '#2E9E5B';
+
+export const colors = {
+  ...neutral,
+
+  pond: POND,
+
+  speciesAccent: SPECIES_ACCENT,
+  /** 선택 라벨/체크뱃지 등 대비가 필요한 곳에 쓰는 진한 변형 (speciesAccent 파생값). */
+  speciesAccentDark: lerpColor(SPECIES_ACCENT, '#000000', 0.28),
+  /** 선택된 카드 배경, 진행 카드 배경 등 옅은 워시가 필요한 곳에 쓰는 변형 (speciesAccent 파생값). */
+  speciesAccentTint: lerpColor(SPECIES_ACCENT, neutral.surface, 0.82),
+
   danger: '#E4572E',
+  /** 유생(올챙이) 단계 색 — 종과 무관하게 고정. */
   tadpole: '#4A4A46',
-  frog: '#39A35C',
 };
 
 export const spacing = {

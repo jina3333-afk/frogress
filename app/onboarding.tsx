@@ -164,7 +164,7 @@ function DomainCard({
       testID={`domain-card-${label}`}
     >
       <View style={[styles.domainIconWrap, selected && styles.domainIconWrapSelected]}>
-        <Icon size={22} color={selected ? colors.surface : colors.primary} strokeWidth={2.2} />
+        <Icon size={22} color={selected ? colors.surface : colors.speciesAccent} strokeWidth={2.2} />
       </View>
       <View style={styles.domainTextWrap}>
         <Text style={[styles.domainLabel, selected && styles.domainLabelSelected]}>{label}</Text>
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: fonts.bodyBold,
     fontSize: 14,
-    color: colors.primary,
+    color: colors.pond,
   },
   subtitle: {
     fontFamily: fonts.body,
@@ -245,19 +245,19 @@ const styles = StyleSheet.create({
   },
   domainCardSelected: {
     borderWidth: 2,
-    borderColor: colors.selectedBorder,
-    backgroundColor: colors.selectedBg,
+    borderColor: colors.speciesAccentDark,
+    backgroundColor: colors.speciesAccentTint,
   },
   domainIconWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.pond,
+    backgroundColor: colors.speciesAccentTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
   domainIconWrapSelected: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.speciesAccent,
   },
   domainTextWrap: {
     flex: 1,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   domainLabelSelected: {
-    color: colors.primaryDark,
+    color: colors.speciesAccentDark,
   },
   domainDescription: {
     fontFamily: fonts.body,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: colors.selectedBorder,
+    backgroundColor: colors.speciesAccentDark,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   cardLabelSelected: {
-    color: colors.primaryDark,
+    color: colors.speciesAccentDark,
   },
   periodCard: {
     width: '31%',
@@ -318,14 +318,14 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.selectedBorder,
+    backgroundColor: colors.speciesAccentDark,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardSelected: {
     borderWidth: 2,
-    borderColor: colors.selectedBorder,
-    backgroundColor: colors.selectedBg,
+    borderColor: colors.speciesAccentDark,
+    backgroundColor: colors.speciesAccentTint,
   },
   input: {
     fontFamily: fonts.body,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   periodInput: {
     fontFamily: fonts.body,
     borderBottomWidth: 1.5,
-    borderColor: colors.primary,
+    borderColor: colors.speciesAccent,
     minWidth: 60,
     textAlign: 'center',
     fontSize: 16,

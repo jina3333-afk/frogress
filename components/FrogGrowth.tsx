@@ -15,7 +15,7 @@ interface Props {
  */
 export function FrogGrowth({ progress, size = 72 }: Props) {
   const p = Math.max(0, Math.min(1, progress));
-  const bodyColor = lerpColor(colors.tadpole, colors.frog, p);
+  const bodyColor = lerpColor(colors.tadpole, colors.speciesAccent, p);
   const tailScale = Math.max(0, 1 - p * 1.6); // 60% 지점부터 꼬리 사라짐
   const legOpacity = Math.min(1, Math.max(0, (p - 0.35) / 0.4)); // 35~75% 구간에서 다리 등장
 
