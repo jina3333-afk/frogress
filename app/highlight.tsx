@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: radii.lg,
     overflow: 'hidden',
-    backgroundColor: colors.border,
+    backgroundColor: colors.surface2,
   },
   frameImage: {
     width: '100%',
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.border,
+    backgroundColor: colors.surface2,
   },
   dotActive: {
     backgroundColor: colors.speciesAccent,

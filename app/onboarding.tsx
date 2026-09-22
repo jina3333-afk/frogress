@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.border,
+    backgroundColor: colors.surface2,
   },
   dotCompleted: {
     backgroundColor: colors.speciesAccentDark,

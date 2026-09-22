@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.surface2,
   },
   cardImagePlaceholder: {
     alignItems: 'center',

@@ -1,15 +1,18 @@
 import { lerpColor } from '../lib/color';
 
 /**
- * 뉴트럴 베이스 — 배경/카드/테두리/텍스트. 그린 틴트 없이 크림·오프화이트 톤으로 고정.
+ * 뉴트럴 베이스 — 배경/카드/테두리/텍스트. speciesAccent(세이지그린)와 같은 계열로
+ * 어울리도록 아주 옅게 그린 기가 도는 그레이 톤을 쓴다.
  * 종(species)이 바뀌어도 이 톤들은 변하지 않는다.
  */
 const neutral = {
-  background: '#FAF7F1',
-  surface: '#FFFFFF',
-  border: '#E7E1D3',
-  text: '#2A2822',
-  textMuted: '#7A7568',
+  background: '#F6F7F3',
+  surface: '#FBFCF9',
+  /** 이미지 플레이스홀더, 비활성 도트 등 surface보다 한 단 가라앉은 보조 배경. */
+  surface2: '#EEF1EA',
+  border: '#DDE3D6',
+  text: '#232A20',
+  textMuted: '#6B7565',
 };
 
 /**

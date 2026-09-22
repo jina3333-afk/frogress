@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: radii.md,
-    backgroundColor: colors.border,
+    backgroundColor: colors.surface2,
   },
   thumbDate: {
     fontFamily: fonts.bodyMedium,
