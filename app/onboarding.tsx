@@ -1,4 +1,4 @@
-import { Check, LucideIcon, Plus } from 'lucide-react-native';
+import { Check, Film, LucideIcon, Plus } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -121,24 +121,36 @@ export default function Onboarding() {
             </View>
           </View>
         )}
-      </ScrollView>
 
-      <View style={styles.footer}>
-        {step === 0 ? (
-          <PrimaryButton
-            label="다음"
-            onPress={() => setStep(1)}
-            disabled={!resolvedDomain}
-          />
-        ) : (
-          <PrimaryButton
-            label={`${periodDays ?? ''}일 기록 시작하기`}
-            onPress={handleStart}
-            disabled={!periodDays}
-            loading={starting}
-          />
+        {step === 1 && periodDays && (
+          <View style={styles.previewCard}>
+            <View style={styles.previewIconWrap}>
+              <Film size={18} color={colors.speciesAccent} strokeWidth={2.2} />
+            </View>
+            <Text style={styles.previewCardText}>
+              <Text style={styles.previewCardStrong}>{periodDays}일</Text> 뒤 첫 하이라이트
+              영상을 보게 돼요
+            </Text>
+          </View>
         )}
-      </View>
+
+        <View style={styles.footer}>
+          {step === 0 ? (
+            <PrimaryButton
+              label="다음"
+              onPress={() => setStep(1)}
+              disabled={!resolvedDomain}
+            />
+          ) : (
+            <PrimaryButton
+              label={`${periodDays ?? ''}일 기록 시작하기`}
+              onPress={handleStart}
+              disabled={!periodDays}
+              loading={starting}
+            />
+          )}
+        </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }
@@ -327,6 +339,34 @@ const styles = StyleSheet.create({
     borderColor: colors.speciesAccentDark,
     backgroundColor: colors.speciesAccentTint,
   },
+  previewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.speciesAccentTint,
+  },
+  previewIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewCardText: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  previewCardStrong: {
+    fontFamily: fonts.bodyBold,
+    color: colors.speciesAccentDark,
+  },
   input: {
     fontFamily: fonts.body,
     width: '100%',
@@ -360,6 +400,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   footer: {
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
   },
 });
