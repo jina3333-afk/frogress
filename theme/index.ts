@@ -37,10 +37,10 @@ export const colors = {
   speciesAccentDark: lerpColor(SPECIES_ACCENT, '#000000', 0.28),
   /** 선택된 카드 배경, 진행 카드 배경 등 옅은 워시가 필요한 곳에 쓰는 변형 (speciesAccent 파생값). */
   speciesAccentTint: lerpColor(SPECIES_ACCENT, neutral.surface, 0.82),
+  /** 밝고 부드러운 변형. 캐릭터 일러스트(FrogGrowth) 등 넓은 면을 채우는 곳에 쓴다. */
+  speciesAccentSoft: lerpColor(SPECIES_ACCENT, neutral.surface, 0.45),
 
   danger: '#E4572E',
-  /** 유생(올챙이) 단계 색 — 종과 무관하게 고정. */
-  tadpole: '#4A4A46',
 };
 
 export const spacing = {
