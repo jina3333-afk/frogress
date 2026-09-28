@@ -10,6 +10,11 @@ import { getActiveCycle, getCompletedCycles } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
+// 카드가 아직 몇 장 없을 때, 그리드 끝에 "다음 개구리를 기다리는 중" 빈 슬롯을 보여주는 기준.
+const EMPTY_SLOT_THRESHOLD = 4;
+
+type PondListItem = { kind: 'cycle'; cycle: CompletedCycle } | { kind: 'placeholder' };
+
 export default function Pond() {
   const [cycles, setCycles] = useState<CompletedCycle[]>([]);
   const [hasActive, setHasActive] = useState(false);
@@ -22,6 +27,11 @@ export default function Pond() {
       })();
     }, [])
   );
+
+  const items: PondListItem[] = cycles.map((cycle) => ({ kind: 'cycle', cycle }));
+  if (cycles.length > 0 && cycles.length < EMPTY_SLOT_THRESHOLD) {
+    items.push({ kind: 'placeholder' });
+  }
 
   return (
     <ScreenContainer>
@@ -49,12 +59,14 @@ export default function Pond() {
         </View>
       ) : (
         <FlatList
-          data={cycles}
-          keyExtractor={(item) => item.id}
+          data={items}
+          keyExtractor={(item) => (item.kind === 'cycle' ? item.cycle.id : 'placeholder')}
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => <PondCard cycle={item} />}
+          renderItem={({ item }) =>
+            item.kind === 'cycle' ? <PondCard cycle={item.cycle} /> : <PondEmptySlotCard />
+          }
         />
       )}
     </ScreenContainer>
@@ -85,6 +97,15 @@ function PondCard({ cycle }: { cycle: CompletedCycle }) {
         </Text>
       </View>
     </Pressable>
+  );
+}
+
+function PondEmptySlotCard() {
+  return (
+    <View style={styles.placeholderCard}>
+      <FrogGrowth progress={0.05} size={36} />
+      <Text style={styles.placeholderText}>다음 개구리를{'\n'}기다리는 중</Text>
+    </View>
   );
 }
 
@@ -141,10 +162,11 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 16 / 9,
   },
   cardBody: {
     padding: spacing.sm,
+    backgroundColor: colors.surface2,
   },
   cardTitleRow: {
     flexDirection: 'row',
@@ -161,5 +183,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  placeholderCard: {
+    flex: 1,
+    minHeight: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.speciesAccent,
+    backgroundColor: colors.speciesAccentTint,
+  },
+  placeholderText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 17,
   },
 });
