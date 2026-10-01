@@ -19,7 +19,13 @@ export function FrogGrowth({ progress, size = 72 }: Props) {
   const tailScale = Math.max(0, 1 - p * 1.6); // 60% 지점부터 꼬리 사라짐
   const legOpacity = Math.min(1, Math.max(0, (p - 0.35) / 0.4)); // 35~75% 구간에서 다리 등장
 
-  const bodySize = size * 0.62;
+  const bodySize = size * 0.72; // 더 둥글고 통통하게
+  const eyeSize = bodySize * 0.26;
+  const eyeGap = bodySize * 0.3; // 눈 간격을 넓게
+  const pupilSize = eyeSize * 0.52;
+  const mouthWidth = bodySize * 0.32;
+  const mouthHeight = mouthWidth * 0.55;
+  const mouthStroke = Math.max(1.5, size * 0.022);
 
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
@@ -46,8 +52,8 @@ export function FrogGrowth({ progress, size = 72 }: Props) {
           {
             backgroundColor: bodyColor,
             opacity: legOpacity,
-            left: size * 0.14,
-            top: size * 0.66,
+            left: size * 0.12,
+            top: size * 0.68,
             transform: [{ rotate: '25deg' }],
           },
         ]}
@@ -58,8 +64,8 @@ export function FrogGrowth({ progress, size = 72 }: Props) {
           {
             backgroundColor: bodyColor,
             opacity: legOpacity,
-            right: size * 0.14,
-            top: size * 0.66,
+            right: size * 0.12,
+            top: size * 0.68,
             transform: [{ rotate: '-25deg' }],
           },
         ]}
@@ -79,14 +85,37 @@ export function FrogGrowth({ progress, size = 72 }: Props) {
           },
         ]}
       >
-        <View style={styles.eyesRow}>
-          <View style={styles.eye}>
-            <View style={styles.pupil} />
+        <View style={[styles.eyesRow, { gap: eyeGap }]}>
+          <View style={[styles.eye, { width: eyeSize, height: eyeSize, borderRadius: eyeSize / 2 }]}>
+            <View
+              style={[
+                styles.pupil,
+                { width: pupilSize, height: pupilSize, borderRadius: pupilSize / 2 },
+              ]}
+            />
           </View>
-          <View style={styles.eye}>
-            <View style={styles.pupil} />
+          <View style={[styles.eye, { width: eyeSize, height: eyeSize, borderRadius: eyeSize / 2 }]}>
+            <View
+              style={[
+                styles.pupil,
+                { width: pupilSize, height: pupilSize, borderRadius: pupilSize / 2 },
+              ]}
+            />
           </View>
         </View>
+
+        {/* 웃는 입 */}
+        <View
+          style={{
+            marginTop: eyeSize * 0.4,
+            width: mouthWidth,
+            height: mouthHeight,
+            borderBottomLeftRadius: mouthHeight,
+            borderBottomRightRadius: mouthHeight,
+            borderBottomWidth: mouthStroke,
+            borderColor: colors.text,
+          }}
+        />
       </View>
     </View>
   );
@@ -115,20 +144,13 @@ const styles = StyleSheet.create({
   },
   eyesRow: {
     flexDirection: 'row',
-    gap: 8,
   },
   eye: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pupil: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#1E2B23',
+    backgroundColor: colors.text,
   },
 });
