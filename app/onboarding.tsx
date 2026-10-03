@@ -134,7 +134,7 @@ export default function Onboarding() {
           {step === 1 && periodDays && (
             <View style={styles.previewCard}>
               <View style={styles.previewIconWrap}>
-                <Film size={18} color={colors.speciesAccent} strokeWidth={2.2} />
+                <Film size={18} color={colors.textMuted} strokeWidth={2.2} />
               </View>
               <Text style={styles.previewCardText}>
                 <Text style={styles.previewCardStrong}>{periodDays}일</Text> 뒤 첫 하이라이트
@@ -203,7 +203,7 @@ function DomainCard({
       testID={`domain-card-${label}`}
     >
       <View style={[styles.domainIconWrap, selected && styles.domainIconWrapSelected]}>
-        <Icon size={22} color={selected ? colors.surface : colors.speciesAccent} strokeWidth={2.2} />
+        <Icon size={22} color={selected ? colors.surface : colors.textMuted} strokeWidth={2.2} />
       </View>
       <View style={styles.domainTextWrap}>
         <Text style={[styles.domainLabel, selected && styles.domainLabelSelected]}>{label}</Text>
@@ -314,18 +314,18 @@ const styles = StyleSheet.create({
   domainCardSelected: {
     borderWidth: 2,
     borderColor: colors.speciesAccentDark,
-    backgroundColor: colors.speciesAccentTint,
+    backgroundColor: colors.surface2,
   },
   domainIconWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.speciesAccentTint,
+    backgroundColor: colors.surface2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   domainIconWrapSelected: {
-    backgroundColor: colors.speciesAccent,
+    backgroundColor: colors.ink,
   },
   domainTextWrap: {
     flex: 1,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   domainLabelSelected: {
-    color: colors.speciesAccentDark,
+    color: colors.text,
   },
   domainDescription: {
     fontFamily: fonts.body,
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: colors.speciesAccentDark,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   cardLabelSelected: {
-    color: colors.speciesAccentDark,
+    color: colors.text,
   },
   periodCard: {
     width: '31%',
@@ -386,14 +386,14 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.speciesAccentDark,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardSelected: {
     borderWidth: 2,
     borderColor: colors.speciesAccentDark,
-    backgroundColor: colors.speciesAccentTint,
+    backgroundColor: colors.surface2,
   },
   previewCard: {
     flexDirection: 'row',
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     padding: spacing.md,
     borderRadius: radii.md,
-    backgroundColor: colors.speciesAccentTint,
+    backgroundColor: colors.surface2,
   },
   previewIconWrap: {
     width: 36,
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   },
   previewCardStrong: {
     fontFamily: fonts.bodyBold,
-    color: colors.speciesAccentDark,
+    color: colors.text,
   },
   input: {
     fontFamily: fonts.body,
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   periodInput: {
     fontFamily: fonts.body,
     borderBottomWidth: 1.5,
-    borderColor: colors.speciesAccent,
+    borderColor: colors.ink,
     minWidth: 60,
     textAlign: 'center',
     fontSize: 16,

@@ -26,7 +26,7 @@ export function ThumbnailImage({ uri, style, iconSize = 20 }: Props) {
           onError={() => setFailed(true)}
         />
       ) : (
-        <Camera size={iconSize} color={colors.speciesAccent} strokeWidth={2} />
+        <Camera size={iconSize} color={colors.textMuted} strokeWidth={2} />
       )}
     </View>
   );
@@ -34,7 +34,7 @@ export function ThumbnailImage({ uri, style, iconSize = 20 }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.speciesAccentTint,
+    backgroundColor: colors.surface2,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

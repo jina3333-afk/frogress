@@ -1,18 +1,19 @@
 import { lerpColor } from '../lib/color';
 
 /**
- * 뉴트럴 베이스 — 배경/카드/테두리/텍스트. speciesAccent(세이지그린)와 같은 계열로
- * 어울리도록 아주 옅게 그린 기가 도는 그레이 톤을 쓴다.
- * 종(species)이 바뀌어도 이 톤들은 변하지 않는다.
+ * 뉴트럴 베이스 — 배경/카드/테두리/텍스트. 그린 틴트를 걷어내고 거의 무채색에 가까운
+ * 톤으로 맞춘다 (Withings 앱류 레퍼런스). 종(species)이 바뀌어도 변하지 않는다.
  */
 const neutral = {
-  background: '#F6F7F3',
+  background: '#F4F3F0',
   surface: '#FBFCF9',
   /** 이미지 플레이스홀더, 비활성 도트 등 surface보다 한 단 가라앉은 보조 배경. */
-  surface2: '#EEF1EA',
-  border: '#DDE3D6',
-  text: '#232A20',
+  surface2: '#EBEAE5',
+  border: '#E2E0D9',
+  text: '#1D1C19',
   textMuted: '#6B7565',
+  /** Primary 버튼 배경, 선택 상태의 아이콘/배지 칠 등 — speciesAccent 대신 쓰는 다크 잉크. */
+  ink: '#211F1A',
 };
 
 /**
@@ -22,10 +23,11 @@ const neutral = {
 const POND = '#1F7A8C';
 
 /**
- * 현재 종(개구리)의 액센트 컬러. 선택 상태 / 진행률(FrogGrowth) / Primary 버튼에서만 쓴다.
- * 다른 종을 추가할 때는 이 값 하나만 바꾸면 파생 톤(dark/tint)까지 자동으로 따라온다.
+ * 현재 종(개구리)의 액센트 컬러. 프로그레스바, 선택된 카드 테두리, 캐릭터(FrogGrowth),
+ * 완료 배지에만 쓴다 — 버튼이나 일반 배경에는 쓰지 않는다 (그 자리는 ink/neutral이 맡는다).
+ * 다른 종을 추가할 때는 이 값 하나만 바꾸면 파생 톤(dark/tint/soft)까지 자동으로 따라온다.
  */
-const SPECIES_ACCENT = '#6FBF73';
+const SPECIES_ACCENT = '#7BBE63';
 
 export const colors = {
   ...neutral,
@@ -33,11 +35,11 @@ export const colors = {
   pond: POND,
 
   speciesAccent: SPECIES_ACCENT,
-  /** 선택 라벨/체크뱃지 등 대비가 필요한 곳에 쓰는 진한 변형 (speciesAccent 파생값). */
+  /** 진한 변형 — 프로그레스 도트, 선택된 카드 테두리, 완료 배지 아이콘/텍스트 (speciesAccent 파생값). */
   speciesAccentDark: lerpColor(SPECIES_ACCENT, '#000000', 0.28),
-  /** 선택된 카드 배경, 진행 카드 배경 등 옅은 워시가 필요한 곳에 쓰는 변형 (speciesAccent 파생값). */
+  /** 옅은 워시 — 완료 배지 배경 전용 (speciesAccent 파생값). */
   speciesAccentTint: lerpColor(SPECIES_ACCENT, neutral.surface, 0.82),
-  /** 밝고 부드러운 변형. 캐릭터 일러스트(FrogGrowth) 등 넓은 면을 채우는 곳에 쓴다. */
+  /** 밝고 부드러운 변형 — 캐릭터 일러스트(FrogGrowth) 성장 그라데이션의 시작색. */
   speciesAccentSoft: lerpColor(SPECIES_ACCENT, neutral.surface, 0.45),
 
   danger: '#E4572E',

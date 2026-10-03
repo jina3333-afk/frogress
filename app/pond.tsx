@@ -194,8 +194,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: colors.speciesAccent,
-    backgroundColor: colors.speciesAccentTint,
+    borderColor: colors.border,
+    backgroundColor: colors.surface2,
   },
   placeholderText: {
     fontFamily: fonts.bodyMedium,

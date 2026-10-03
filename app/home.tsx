@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     color: colors.pond,
   },
   growthCard: {
-    backgroundColor: colors.speciesAccentTint,
+    backgroundColor: colors.surface2,
     borderRadius: radii.lg,
     padding: spacing.lg,
     alignItems: 'center',
