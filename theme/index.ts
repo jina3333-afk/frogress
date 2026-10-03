@@ -60,17 +60,20 @@ export const radii = {
 };
 
 /**
- * Noto Serif KR(세리프, 제목·숫자용) / Pretendard(본문·라벨·버튼용) 폰트 패밀리 토큰.
- * 둘 다 한글 글리프를 포함한다 (Fraunces/Inter는 라틴 전용이라 한글이 시스템 폰트로
- * 폴백됐었다). app/_layout.tsx에서 useFonts로 로드하며, 실제 폰트 파일명과 1:1로 매핑된다.
+ * SUIT 하나로 통일한 폰트 패밀리 토큰 — 한글/숫자 모두 같은 서체를 쓰고,
+ * 위계는 패밀리가 아니라 굵기로만 표현한다:
+ *   title(ExtraBold)    — 큰 제목/숫자 (예: "4/7일째")
+ *   heading(Bold)       — 섹션 제목
+ *   body~bodyBold       — 본문/라벨/버튼 (Regular~Bold)
+ * app/_layout.tsx에서 useFonts로 로드하며, 실제 폰트 파일명과 1:1로 매핑된다.
  */
 export const fonts = {
-  title: 'NotoSerifKR_600SemiBold',
-  titleBold: 'NotoSerifKR_700Bold',
-  body: 'Pretendard_400Regular',
-  bodyMedium: 'Pretendard_500Medium',
-  bodySemiBold: 'Pretendard_600SemiBold',
-  bodyBold: 'Pretendard_700Bold',
+  title: 'SUIT_700Bold',
+  titleBold: 'SUIT_800ExtraBold',
+  body: 'SUIT_400Regular',
+  bodyMedium: 'SUIT_500Medium',
+  bodySemiBold: 'SUIT_600SemiBold',
+  bodyBold: 'SUIT_700Bold',
 };
 
 export const typography = {
