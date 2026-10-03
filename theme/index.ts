@@ -25,7 +25,7 @@ const POND = '#1F7A8C';
  * 현재 종(개구리)의 액센트 컬러. 선택 상태 / 진행률(FrogGrowth) / Primary 버튼에서만 쓴다.
  * 다른 종을 추가할 때는 이 값 하나만 바꾸면 파생 톤(dark/tint)까지 자동으로 따라온다.
  */
-const SPECIES_ACCENT = '#2E9E5B';
+const SPECIES_ACCENT = '#6FBF73';
 
 export const colors = {
   ...neutral,
