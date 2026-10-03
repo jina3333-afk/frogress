@@ -60,17 +60,17 @@ export const radii = {
 };
 
 /**
- * Fraunces(세리프, 제목용) / Inter(본문용) 폰트 패밀리 토큰.
- * app/_layout.tsx에서 useFonts로 로드하며, 실제 폰트 파일명과 1:1로 매핑된다.
+ * Noto Serif KR(세리프, 제목·숫자용) / Pretendard(본문·라벨·버튼용) 폰트 패밀리 토큰.
+ * 둘 다 한글 글리프를 포함한다 (Fraunces/Inter는 라틴 전용이라 한글이 시스템 폰트로
+ * 폴백됐었다). app/_layout.tsx에서 useFonts로 로드하며, 실제 폰트 파일명과 1:1로 매핑된다.
  */
 export const fonts = {
-  title: 'Fraunces_600SemiBold',
-  titleBold: 'Fraunces_700Bold',
-  titleItalic: 'Fraunces_600SemiBold_Italic',
-  body: 'Inter_400Regular',
-  bodyMedium: 'Inter_500Medium',
-  bodySemiBold: 'Inter_600SemiBold',
-  bodyBold: 'Inter_700Bold',
+  title: 'NotoSerifKR_600SemiBold',
+  titleBold: 'NotoSerifKR_700Bold',
+  body: 'Pretendard_400Regular',
+  bodyMedium: 'Pretendard_500Medium',
+  bodySemiBold: 'Pretendard_600SemiBold',
+  bodyBold: 'Pretendard_700Bold',
 };
 
 export const typography = {
