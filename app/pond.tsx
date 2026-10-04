@@ -5,6 +5,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { ThumbnailImage } from '../components/ThumbnailImage';
+import { lerpColor } from '../lib/color';
 import { getDomainConfig } from '../lib/domains';
 import { getActiveCycle, getCompletedCycles } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
@@ -77,6 +78,8 @@ function PondCard({ cycle }: { cycle: CompletedCycle }) {
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
   const coverUri = cycle.entries[cycle.entries.length - 1]?.rawMediaRef;
+  // 도메인별로 살짝 다른 커버 톤 — 연한 워시라 전체 뉴트럴 톤을 해치지 않는다.
+  const coverTint = lerpColor(config.accentColor, colors.surface, 0.85);
 
   return (
     <Pressable
@@ -86,10 +89,16 @@ function PondCard({ cycle }: { cycle: CompletedCycle }) {
       }
       testID="pond-card"
     >
-      <ThumbnailImage uri={coverUri} style={styles.cardImage} iconSize={28} />
+      <ThumbnailImage
+        uri={coverUri}
+        style={styles.cardImage}
+        iconSize={28}
+        tintColor={coverTint}
+        iconColor={config.accentColor}
+      />
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
-          <Icon size={13} color={colors.textMuted} strokeWidth={2.4} />
+          <Icon size={13} color={config.accentColor} strokeWidth={2.4} />
           <Text style={styles.cardTitle}>{config.label}</Text>
         </View>
         <Text style={styles.cardMeta}>

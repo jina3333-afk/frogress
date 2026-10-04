@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface2,
   },
   dotActive: {
-    backgroundColor: colors.speciesAccent,
+    backgroundColor: colors.accent,
     width: 16,
   },
   footer: {

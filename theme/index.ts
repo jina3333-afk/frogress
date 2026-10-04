@@ -1,8 +1,8 @@
 import { lerpColor } from '../lib/color';
 
 /**
- * 뉴트럴 베이스 — 배경/카드/테두리/텍스트. 그린 틴트를 걷어내고 거의 무채색에 가까운
- * 톤으로 맞춘다 (Withings 앱류 레퍼런스). 종(species)이 바뀌어도 변하지 않는다.
+ * 뉴트럴 베이스 — 배경/카드/테두리/텍스트. 화면 전체에서 고정이며
+ * 거의 무채색에 가까운 톤으로 맞춘다 (Withings 앱류 레퍼런스).
  */
 const neutral = {
   background: '#F4F3F0',
@@ -12,35 +12,35 @@ const neutral = {
   border: '#E2E0D9',
   text: '#1D1C19',
   textMuted: '#6B7565',
-  /** Primary 버튼 배경, 선택 상태의 아이콘/배지 칠 등 — speciesAccent 대신 쓰는 다크 잉크. */
+  /** Primary 버튼 배경, 선택 상태의 아이콘/배지 칠 등 — accent 대신 쓰는 다크 잉크. */
   ink: '#211F1A',
 };
 
 /**
  * 브랜드 고정 컬러. 로고(Frogress 워드마크)와 "연못" 내비게이션처럼
- * 어떤 종을 기르든 항상 같은 톤으로 유지되는 요소 전용.
+ * 항상 같은 톤으로 유지되는 요소 전용.
  */
 const POND = '#1F7A8C';
 
 /**
- * 현재 종(개구리)의 액센트 컬러. 프로그레스바, 선택된 카드 테두리, 캐릭터(FrogGrowth),
+ * 고정 브랜드 액센트(그린). 프로그레스바, 선택된 카드 테두리, 캐릭터(FrogGrowth),
  * 완료 배지에만 쓴다 — 버튼이나 일반 배경에는 쓰지 않는다 (그 자리는 ink/neutral이 맡는다).
- * 다른 종을 추가할 때는 이 값 하나만 바꾸면 파생 톤(dark/tint/soft)까지 자동으로 따라온다.
+ * 사이클/도메인에 따라 바뀌지 않는 단일 값.
  */
-const SPECIES_ACCENT = '#7BBE63';
+const ACCENT = '#7BBE63';
 
 export const colors = {
   ...neutral,
 
   pond: POND,
 
-  speciesAccent: SPECIES_ACCENT,
-  /** 진한 변형 — 프로그레스 도트, 선택된 카드 테두리, 완료 배지 아이콘/텍스트 (speciesAccent 파생값). */
-  speciesAccentDark: lerpColor(SPECIES_ACCENT, '#000000', 0.28),
-  /** 옅은 워시 — 완료 배지 배경 전용 (speciesAccent 파생값). */
-  speciesAccentTint: lerpColor(SPECIES_ACCENT, neutral.surface, 0.82),
+  accent: ACCENT,
+  /** 진한 변형 — 프로그레스 도트, 선택된 카드 테두리, 완료 배지 아이콘/텍스트 (accent 파생값). */
+  accentDark: lerpColor(ACCENT, '#000000', 0.28),
+  /** 옅은 워시 — 완료 배지 배경 전용 (accent 파생값). */
+  accentTint: lerpColor(ACCENT, neutral.surface, 0.82),
   /** 밝고 부드러운 변형 — 캐릭터 일러스트(FrogGrowth) 성장 그라데이션의 시작색. */
-  speciesAccentSoft: lerpColor(SPECIES_ACCENT, neutral.surface, 0.45),
+  accentSoft: lerpColor(ACCENT, neutral.surface, 0.45),
 
   danger: '#E4572E',
 };

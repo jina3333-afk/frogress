@@ -1,4 +1,5 @@
 import { Dumbbell, Mic, Sparkles, Tag } from 'lucide-react-native';
+import { colors } from '../theme';
 import { Domain, DomainConfig } from './types';
 
 export const DOMAIN_CONFIGS: DomainConfig[] = [
@@ -13,6 +14,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
       shots: [{ angle: 'front', guideType: 'face_oval' }],
       lightingCheck: true,
     },
+    accentColor: '#C98368',
   },
   {
     domain: 'exercise',
@@ -25,6 +27,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
       shots: [{ angle: 'front', guideType: 'body_silhouette' }],
       lightingCheck: false,
     },
+    accentColor: '#5B7FA6',
   },
   {
     domain: 'voice',
@@ -37,6 +40,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
       shots: [{ angle: 'front', guideType: 'custom' }],
       lightingCheck: false,
     },
+    accentColor: '#8C6FA0',
   },
 ];
 
@@ -45,7 +49,7 @@ export const PERIOD_PRESETS = [7, 30, 90];
 export function getDomainConfig(domain: Domain): DomainConfig {
   const found = DOMAIN_CONFIGS.find((d) => d.domain === domain);
   if (found) return found;
-  // 커스텀 도메인: 기본값으로 사진 기반, face_oval 가이드 사용
+  // 커스텀 도메인: 기본값으로 사진 기반, face_oval 가이드 사용. 정해진 색이 없으니 중립 톤.
   return {
     domain,
     label: domain,
@@ -57,5 +61,6 @@ export function getDomainConfig(domain: Domain): DomainConfig {
       shots: [{ angle: 'front', guideType: 'custom' }],
       lightingCheck: false,
     },
+    accentColor: colors.textMuted,
   };
 }

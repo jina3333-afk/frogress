@@ -18,6 +18,8 @@ export interface DomainConfig {
     shots: { angle: ShotAngle; guideType: GuideType }[];
     lightingCheck: boolean;
   };
+  /** 연못 카드 등에서 도메인을 구분하는 보조 색 — 브랜드 accent와는 별개의 좁은 범위용. */
+  accentColor: string;
 }
 
 export interface Entry {

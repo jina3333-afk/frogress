@@ -257,10 +257,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface2,
   },
   dotCompleted: {
-    backgroundColor: colors.speciesAccentDark,
+    backgroundColor: colors.accentDark,
   },
   dotActive: {
-    backgroundColor: colors.speciesAccent,
+    backgroundColor: colors.accent,
     width: 18,
   },
   scroll: {

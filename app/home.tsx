@@ -102,7 +102,7 @@ export default function Home() {
             <PrimaryButton label="하이라이트 보러가기" onPress={() => router.push('/highlight')} />
           ) : recordedToday ? (
             <View style={styles.completedBadge}>
-              <CircleCheck size={18} color={colors.speciesAccentDark} strokeWidth={2.2} />
+              <CircleCheck size={18} color={colors.accentDark} strokeWidth={2.2} />
               <Text style={styles.completedBadgeText}>오늘 기록 완료</Text>
             </View>
           ) : (
@@ -216,12 +216,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.md,
     borderRadius: radii.pill,
-    backgroundColor: colors.speciesAccentTint,
+    backgroundColor: colors.accentTint,
   },
   completedBadgeText: {
     fontFamily: fonts.bodyBold,
     fontSize: 16,
-    color: colors.speciesAccentDark,
+    color: colors.accentDark,
   },
   sectionTitle: {
     ...typography.heading,
