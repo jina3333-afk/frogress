@@ -80,7 +80,7 @@ export default function Home() {
             </Text>
           </View>
           <Pressable onPress={() => router.push('/pond')} style={styles.pondLink}>
-            <Waves size={16} color={colors.pond} strokeWidth={2.2} />
+            <Waves size={16} color={colors.textMuted} strokeWidth={2.2} />
             <Text style={styles.pondLinkText}>연못</Text>
           </Pressable>
         </View>
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   pondLinkText: {
     fontFamily: fonts.bodySemiBold,
     fontSize: 15,
-    color: colors.pond,
+    color: colors.textMuted,
   },
   growthCard: {
     backgroundColor: colors.surface2,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   statsSectionTitle: {
     ...typography.heading,
     fontSize: 16,
-    marginTop: spacing.lg,
+    marginTop: spacing.xxl,
     marginBottom: spacing.sm,
   },
   statsCard: {

@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: fonts.bodyBold,
     fontSize: 14,
-    color: colors.pond,
+    color: colors.textMuted,
   },
   subtitle: {
     fontFamily: fonts.body,
@@ -312,8 +312,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   domainCardSelected: {
-    borderWidth: 2,
-    borderColor: colors.speciesAccentDark,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
     backgroundColor: colors.surface2,
   },
   domainIconWrap: {
@@ -391,8 +391,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardSelected: {
-    borderWidth: 2,
-    borderColor: colors.speciesAccentDark,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
     backgroundColor: colors.surface2,
   },
   previewCard: {

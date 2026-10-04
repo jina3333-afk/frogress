@@ -38,7 +38,7 @@ export default function Pond() {
       <View style={styles.header}>
         <View>
           <View style={styles.eyebrowRow}>
-            <Waves size={15} color={colors.pond} strokeWidth={2.4} />
+            <Waves size={15} color={colors.textMuted} strokeWidth={2.4} />
             <Text style={styles.eyebrow}>나의 연못</Text>
           </View>
           <Text style={typography.title}>완성된 기록 {cycles.length}개</Text>
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: fonts.bodyBold,
     fontSize: 14,
-    color: colors.pond,
+    color: colors.textMuted,
   },
   backLink: {
     fontFamily: fonts.bodySemiBold,
