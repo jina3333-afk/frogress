@@ -87,7 +87,11 @@ export default function Highlight() {
             onPress={() =>
               router.replace({
                 pathname: '/transition',
-                params: { domain: cycle.domain, periodDays: String(cycle.periodDays) },
+                params: {
+                  domain: cycle.domain,
+                  periodDays: String(cycle.periodDays),
+                  cycleId: cycle.id,
+                },
               })
             }
           />
