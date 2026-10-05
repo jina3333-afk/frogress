@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     padding: spacing.sm,
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.surface,
   },
   cardTitleRow: {
     flexDirection: 'row',
