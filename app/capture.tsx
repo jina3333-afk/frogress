@@ -6,6 +6,7 @@ import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { CaptureGuideOverlay } from '../components/CaptureGuideOverlay';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { analyzePhoto } from '../lib/analysis';
 import { getDomainConfig } from '../lib/domains';
 import { PhotoTimelapseGenerator, alignEntryMedia } from '../lib/highlight';
 import { generateId } from '../lib/id';
@@ -75,6 +76,11 @@ export default function Capture() {
     // AI 정렬 보정 (스텁 — 다음 단계: MediaPipe 랜드마크 기반 2D 정렬)
     const processedUri = await alignEntryMedia(photoUri);
 
+    // 분석 실패(네트워크 오류, API 키 미설정 등)는 analyzePhoto가 null로 삼켜서
+    // 돌려준다 — 사진 저장 자체는 분석 성공 여부와 무관하게 항상 진행된다.
+    const activeCycle = await getActiveCycle();
+    const metrics = (await analyzePhoto(photoUri, domain, activeCycle?.entries ?? [])) ?? {};
+
     const entry: Entry = {
       id: generateId('entry'),
       domain,
@@ -82,7 +88,7 @@ export default function Capture() {
       date: new Date().toISOString(),
       rawMediaRef: photoUri,
       processedMediaRef: processedUri,
-      metrics: {},
+      metrics,
     };
 
     const updatedCycle = await addEntryToActiveCycle(entry);
@@ -105,7 +111,7 @@ export default function Capture() {
         {processing ? (
           <View style={styles.processingRow}>
             <ActivityIndicator color={colors.textMuted} />
-            <Text style={styles.processingText}>정렬 보정 중...</Text>
+            <Text style={styles.processingText}>저장 처리 중...</Text>
           </View>
         ) : (
           <View style={styles.previewActions}>
