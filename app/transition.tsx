@@ -61,8 +61,10 @@ export default function Transition() {
               ))}
             </View>
             <Text style={styles.summaryText}>
-              <Text style={styles.summaryStrong}>{completedCycle.entryCount}일</Text> 동안
-              기록했어요
+              기록한 날{' '}
+              <Text style={styles.summaryStrong}>
+                {completedCycle.entryCount}/{completedCycle.periodDays}일
+              </Text>
             </Text>
           </View>
         )}
