@@ -97,5 +97,5 @@ export async function getCompletedCycleById(id: string): Promise<CompletedCycle 
 }
 
 export async function resetAll(): Promise<void> {
-  await AsyncStorage.removeMany([KEYS.onboarded, KEYS.activeCycle, KEYS.completedCycles]);
+  await AsyncStorage.multiRemove([KEYS.onboarded, KEYS.activeCycle, KEYS.completedCycles]);
 }
