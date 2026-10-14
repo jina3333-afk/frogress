@@ -122,7 +122,11 @@ export default function Home() {
             contentContainerStyle={styles.thumbRow}
             renderItem={({ item }) => (
               <View style={styles.thumbWrap}>
-                <ThumbnailImage uri={item.rawMediaRef} style={styles.thumb} iconSize={22} />
+                <ThumbnailImage
+                  uri={item.mediaType === 'photo' ? item.rawMediaRef : undefined}
+                  style={styles.thumb}
+                  iconSize={22}
+                />
                 <Text style={styles.thumbDate}>
                   {new Date(item.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                 </Text>

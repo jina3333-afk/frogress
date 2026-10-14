@@ -1,8 +1,19 @@
-import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraMode, CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
-import { Lightbulb } from 'lucide-react-native';
-import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { Lightbulb, Mic, Pause, Play } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  PermissionResponse,
+  RecordingPresets,
+  getRecordingPermissionsAsync,
+  requestRecordingPermissionsAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { CaptureGuideOverlay } from '../components/CaptureGuideOverlay';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
@@ -10,22 +21,51 @@ import { analyzePhoto } from '../lib/analysis';
 import { getDomainConfig } from '../lib/domains';
 import { PhotoTimelapseGenerator, alignEntryMedia } from '../lib/highlight';
 import { generateId } from '../lib/id';
-import {
-  addEntryToActiveCycle,
-  completeActiveCycle,
-  getActiveCycle,
-} from '../lib/storage';
-import { Entry } from '../lib/types';
+import { addEntryToActiveCycle, completeActiveCycle, getActiveCycle } from '../lib/storage';
+import { Entry, MediaType } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+/** 엔트리 저장 + 사이클 완료 여부에 따른 후속 네비게이션. 캡처 모드(사진/동영상/음성) 공통 로직. */
+async function saveEntryAndNavigate(params: {
+  domain: string;
+  mediaType: MediaType;
+  rawMediaRef: string;
+  processedMediaRef?: string;
+  metrics: Record<string, number | string>;
+}) {
+  const entry: Entry = {
+    id: generateId('entry'),
+    domain: params.domain,
+    mediaType: params.mediaType,
+    date: new Date().toISOString(),
+    rawMediaRef: params.rawMediaRef,
+    processedMediaRef: params.processedMediaRef,
+    metrics: params.metrics,
+  };
+
+  const updatedCycle = await addEntryToActiveCycle(entry);
+
+  if (updatedCycle && updatedCycle.entries.length >= updatedCycle.periodDays) {
+    const generator = new PhotoTimelapseGenerator();
+    const highlight = await generator.generate(updatedCycle.entries);
+    await completeActiveCycle(highlight.ref);
+    router.replace('/highlight');
+  } else {
+    router.replace('/home');
+  }
+}
+
 export default function Capture() {
-  const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView>(null);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
   const [cycleDomain, setCycleDomain] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     (async () => {
       const cycle = await getActiveCycle();
       if (!cycle) {
@@ -35,6 +75,49 @@ export default function Capture() {
       setCycleDomain(cycle.domain);
     })();
   }, []);
+
+  if (!cycleDomain) {
+    return <ScreenContainer />;
+  }
+
+  const config = getDomainConfig(cycleDomain);
+  return config.mediaType === 'audio' ? (
+    <AudioCapture domain={cycleDomain} />
+  ) : (
+    <PhotoVideoCapture domain={cycleDomain} />
+  );
+}
+
+function VideoPreviewPlayer({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.play();
+  });
+  return (
+    <VideoView player={player} style={styles.previewImage} nativeControls contentFit="contain" />
+  );
+}
+
+function PhotoVideoCapture({ domain }: { domain: string }) {
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [videoUri, setVideoUri] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [captureMode, setCaptureMode] = useState<CameraMode>('picture');
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [recordingMs, setRecordingMs] = useState(0);
+
+  const config = getDomainConfig(domain);
+  const guide = config.captureGuide.shots[0];
+  const facing: CameraType = guide.angle === 'front' ? 'front' : 'back';
+
+  useEffect(() => {
+    if (!isRecordingVideo) return;
+    const start = Date.now();
+    const timer = setInterval(() => setRecordingMs(Date.now() - start), 200);
+    return () => clearInterval(timer);
+  }, [isRecordingVideo]);
 
   if (!permission) {
     return <ScreenContainer />;
@@ -53,15 +136,6 @@ export default function Capture() {
     );
   }
 
-  if (!cycleDomain) {
-    return <ScreenContainer />;
-  }
-
-  const domain: string = cycleDomain;
-  const config = getDomainConfig(domain);
-  const guide = config.captureGuide.shots[0];
-  const facing: CameraType = guide.angle === 'front' ? 'front' : 'back';
-
   async function takePhoto() {
     const photo = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
     if (photo?.uri) {
@@ -69,45 +143,72 @@ export default function Capture() {
     }
   }
 
-  async function confirmPhoto() {
-    if (!photoUri) return;
-    setProcessing(true);
-
-    // AI 정렬 보정 (스텁 — 다음 단계: MediaPipe 랜드마크 기반 2D 정렬)
-    const processedUri = await alignEntryMedia(photoUri);
-
-    // 분석 실패(네트워크 오류, API 키 미설정 등)는 analyzePhoto가 null로 삼켜서
-    // 돌려준다 — 사진 저장 자체는 분석 성공 여부와 무관하게 항상 진행된다.
-    const activeCycle = await getActiveCycle();
-    const metrics = (await analyzePhoto(photoUri, domain, activeCycle?.entries ?? [])) ?? {};
-
-    const entry: Entry = {
-      id: generateId('entry'),
-      domain,
-      mediaType: 'photo',
-      date: new Date().toISOString(),
-      rawMediaRef: photoUri,
-      processedMediaRef: processedUri,
-      metrics,
-    };
-
-    const updatedCycle = await addEntryToActiveCycle(entry);
-    setProcessing(false);
-
-    if (updatedCycle && updatedCycle.entries.length >= updatedCycle.periodDays) {
-      const generator = new PhotoTimelapseGenerator();
-      const highlight = await generator.generate(updatedCycle.entries);
-      await completeActiveCycle(highlight.ref);
-      router.replace('/highlight');
-    } else {
-      router.replace('/home');
+  async function startVideoRecording() {
+    const existing = await getRecordingPermissionsAsync();
+    if (!existing.granted) {
+      const requested = await requestRecordingPermissionsAsync();
+      if (!requested.granted) return;
+    }
+    setIsRecordingVideo(true);
+    setRecordingMs(0);
+    const result = await cameraRef.current?.recordAsync();
+    setIsRecordingVideo(false);
+    if (result?.uri) {
+      setVideoUri(result.uri);
     }
   }
 
-  if (photoUri) {
+  function handleShutterPress() {
+    if (captureMode === 'picture') {
+      takePhoto();
+      return;
+    }
+    if (isRecordingVideo) {
+      cameraRef.current?.stopRecording();
+    } else {
+      startVideoRecording();
+    }
+  }
+
+  async function confirmCapture() {
+    const uri = photoUri ?? videoUri;
+    if (!uri) return;
+    setProcessing(true);
+
+    if (photoUri) {
+      // AI 정렬 보정 (스텁 — 다음 단계: MediaPipe 랜드마크 기반 2D 정렬). 사진에만 적용.
+      const processedUri = await alignEntryMedia(photoUri);
+      // 분석 실패(네트워크 오류, API 키 미설정 등)는 analyzePhoto가 null로 삼켜서
+      // 돌려준다 — 사진 저장 자체는 분석 성공 여부와 무관하게 항상 진행된다.
+      const activeCycle = await getActiveCycle();
+      const metrics = (await analyzePhoto(photoUri, domain, activeCycle?.entries ?? [])) ?? {};
+      await saveEntryAndNavigate({
+        domain,
+        mediaType: 'photo',
+        rawMediaRef: photoUri,
+        processedMediaRef: processedUri,
+        metrics,
+      });
+    } else if (videoUri) {
+      await saveEntryAndNavigate({
+        domain,
+        mediaType: 'video',
+        rawMediaRef: videoUri,
+        metrics: {},
+      });
+    }
+
+    setProcessing(false);
+  }
+
+  if (photoUri || videoUri) {
     return (
       <ScreenContainer style={styles.previewContainer}>
-        <Image source={{ uri: photoUri }} style={styles.previewImage} />
+        {photoUri ? (
+          <Image source={{ uri: photoUri }} style={styles.previewImage} />
+        ) : (
+          <VideoPreviewPlayer uri={videoUri!} />
+        )}
         {processing ? (
           <View style={styles.processingRow}>
             <ActivityIndicator color={colors.textMuted} />
@@ -116,10 +217,17 @@ export default function Capture() {
         ) : (
           <View style={styles.previewActions}>
             <View style={styles.previewActionItem}>
-              <PrimaryButton label="다시 찍기" variant="secondary" onPress={() => setPhotoUri(null)} />
+              <PrimaryButton
+                label={photoUri ? '다시 찍기' : '다시 촬영'}
+                variant="secondary"
+                onPress={() => {
+                  setPhotoUri(null);
+                  setVideoUri(null);
+                }}
+              />
             </View>
             <View style={styles.previewActionItem}>
-              <PrimaryButton label="저장하기" onPress={confirmPhoto} />
+              <PrimaryButton label="저장하기" onPress={confirmCapture} />
             </View>
           </View>
         )}
@@ -131,29 +239,204 @@ export default function Capture() {
     <View style={styles.fill}>
       {/* CameraView는 실기기에서 children을 지원하지 않는다(렌더링되지 않음) —
           가이드/버튼은 반드시 형제 엘리먼트로 절대위치 오버레이해야 한다. */}
-      <CameraView ref={cameraRef} style={styles.fill} facing={facing} />
+      <CameraView ref={cameraRef} style={styles.fill} facing={facing} mode={captureMode} />
       <CaptureGuideOverlay guideType={guide.guideType} />
-      {config.captureGuide.lightingCheck && (
+      {config.captureGuide.lightingCheck && !isRecordingVideo && (
         <View style={styles.tipBanner}>
           <Lightbulb size={14} color="#fff" strokeWidth={2.2} />
           <Text style={styles.tipText}>밝은 곳에서 정면을 향해 촬영해주세요</Text>
         </View>
       )}
-      <View style={styles.controls}>
-        <Text onPress={() => router.back()} style={styles.cancelText}>
-          취소
-        </Text>
-        <View style={styles.shutterRing}>
-          <Text
-            onPress={takePhoto}
-            style={styles.shutter}
-            accessibilityRole="button"
-            testID="capture-shutter"
-          />
+      {isRecordingVideo && (
+        <View style={styles.recordingBadge}>
+          <View style={styles.recordingDot} />
+          <Text style={styles.recordingText}>{formatDuration(recordingMs)}</Text>
         </View>
-        <View style={styles.controlsSpacer} />
+      )}
+
+      <View style={styles.captureFooter}>
+        {!isRecordingVideo && (
+          <View style={styles.modeToggle}>
+            <Pressable
+              onPress={() => setCaptureMode('picture')}
+              style={[styles.modeOption, captureMode === 'picture' && styles.modeOptionActive]}
+            >
+              <Text
+                style={[
+                  styles.modeOptionText,
+                  captureMode === 'picture' && styles.modeOptionTextActive,
+                ]}
+              >
+                사진
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setCaptureMode('video')}
+              style={[styles.modeOption, captureMode === 'video' && styles.modeOptionActive]}
+            >
+              <Text
+                style={[
+                  styles.modeOptionText,
+                  captureMode === 'video' && styles.modeOptionTextActive,
+                ]}
+              >
+                동영상
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        <View style={styles.controls}>
+          <Text
+            onPress={isRecordingVideo ? undefined : () => router.back()}
+            style={[styles.cancelText, isRecordingVideo && styles.cancelTextDisabled]}
+          >
+            취소
+          </Text>
+          <View style={styles.shutterRing}>
+            <Text
+              onPress={handleShutterPress}
+              style={[
+                styles.shutter,
+                captureMode === 'video' && styles.shutterVideo,
+                isRecordingVideo && styles.shutterRecording,
+              ]}
+              accessibilityRole="button"
+              testID="capture-shutter"
+            />
+          </View>
+          <View style={styles.controlsSpacer} />
+        </View>
       </View>
     </View>
+  );
+}
+
+function AudioPreviewPlayer({ uri }: { uri: string }) {
+  const player = useAudioPlayer(uri);
+  const status = useAudioPlayerStatus(player);
+
+  return (
+    <View style={styles.audioPreviewPlayer}>
+      <Pressable
+        onPress={() => (status.playing ? player.pause() : player.play())}
+        style={styles.audioPlayButton}
+      >
+        {status.playing ? (
+          <Pause size={28} color={colors.surface} strokeWidth={2.2} />
+        ) : (
+          <Play size={28} color={colors.surface} strokeWidth={2.2} />
+        )}
+      </Pressable>
+      <Text style={styles.audioPreviewTime}>
+        {formatDuration(status.currentTime * 1000)} / {formatDuration(status.duration * 1000)}
+      </Text>
+    </View>
+  );
+}
+
+function AudioCapture({ domain }: { domain: string }) {
+  const [permission, setPermission] = useState<PermissionResponse | null>(null);
+  const [recordedUri, setRecordedUri] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
+
+  useEffect(() => {
+    (async () => {
+      setPermission(await getRecordingPermissionsAsync());
+    })();
+  }, []);
+
+  async function requestPermission() {
+    setPermission(await requestRecordingPermissionsAsync());
+  }
+
+  async function startRecording() {
+    await recorder.prepareToRecordAsync();
+    recorder.record();
+  }
+
+  async function stopRecording() {
+    await recorder.stop();
+    if (recorder.uri) {
+      setRecordedUri(recorder.uri);
+    }
+  }
+
+  async function confirmRecording() {
+    if (!recordedUri) return;
+    setProcessing(true);
+    await saveEntryAndNavigate({
+      domain,
+      mediaType: 'audio',
+      rawMediaRef: recordedUri,
+      metrics: {},
+    });
+    setProcessing(false);
+  }
+
+  if (!permission) {
+    return <ScreenContainer />;
+  }
+
+  if (!permission.granted) {
+    return (
+      <ScreenContainer style={styles.centerContent}>
+        <Text style={typography.heading}>마이크 접근이 필요해요</Text>
+        <Text style={styles.permissionBody}>
+          매일 기록 음성을 녹음하려면 마이크 권한을 허용해주세요.
+        </Text>
+        <PrimaryButton label="권한 허용하기" onPress={requestPermission} />
+        <PrimaryButton label="취소" variant="ghost" onPress={() => router.back()} />
+      </ScreenContainer>
+    );
+  }
+
+  if (recordedUri) {
+    return (
+      <ScreenContainer style={styles.centerContent}>
+        <Text style={typography.heading}>녹음을 확인해보세요</Text>
+        <AudioPreviewPlayer uri={recordedUri} />
+        {processing ? (
+          <View style={styles.processingRowStatic}>
+            <ActivityIndicator color={colors.textMuted} />
+            <Text style={styles.processingText}>저장 처리 중...</Text>
+          </View>
+        ) : (
+          <View style={styles.audioActions}>
+            <View style={styles.previewActionItem}>
+              <PrimaryButton
+                label="다시 녹음"
+                variant="secondary"
+                onPress={() => setRecordedUri(null)}
+              />
+            </View>
+            <View style={styles.previewActionItem}>
+              <PrimaryButton label="저장하기" onPress={confirmRecording} />
+            </View>
+          </View>
+        )}
+      </ScreenContainer>
+    );
+  }
+
+  return (
+    <ScreenContainer style={styles.centerContent}>
+      <Text style={typography.heading}>
+        {recorderState.isRecording ? '녹음 중이에요' : '눌러서 녹음을 시작하세요'}
+      </Text>
+      <Text style={styles.audioTimer}>{formatDuration(recorderState.durationMillis)}</Text>
+
+      <Pressable
+        onPress={recorderState.isRecording ? stopRecording : startRecording}
+        style={[styles.audioRecordButton, recorderState.isRecording && styles.audioRecordButtonActive]}
+      >
+        <Mic size={32} color={recorderState.isRecording ? colors.surface : colors.ink} strokeWidth={2.2} />
+      </Pressable>
+
+      <PrimaryButton label="취소" variant="ghost" onPress={() => router.back()} />
+    </ScreenContainer>
   );
 }
 
@@ -183,17 +466,65 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   tipText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 13 },
-  controls: {
+  recordingBadge: {
+    position: 'absolute',
+    top: spacing.xl,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.danger,
+  },
+  recordingText: { fontFamily: fonts.bodyBold, color: '#fff', fontSize: 13 },
+  captureFooter: {
     position: 'absolute',
     bottom: spacing.xl,
     left: 0,
     right: 0,
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderRadius: radii.pill,
+    padding: 3,
+    gap: 2,
+  },
+  modeOption: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+  },
+  modeOptionActive: {
+    backgroundColor: '#fff',
+  },
+  modeOptionText: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 13,
+    color: '#fff',
+  },
+  modeOptionTextActive: {
+    color: colors.ink,
+  },
+  controls: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
   },
   cancelText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 15, width: 60 },
+  cancelTextDisabled: { opacity: 0.35 },
   controlsSpacer: { width: 60 },
   shutterRing: {
     width: 76,
@@ -210,6 +541,14 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: '#fff',
   },
+  shutterVideo: {
+    backgroundColor: colors.danger,
+  },
+  shutterRecording: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+  },
   previewContainer: { padding: 0 },
   previewImage: { flex: 1, borderRadius: 0 },
   processingRow: {
@@ -224,6 +563,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radii.pill,
   },
+  processingRowStatic: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
   processingText: { fontFamily: fonts.bodySemiBold, color: colors.text },
   previewActions: {
     position: 'absolute',
@@ -235,5 +581,47 @@ const styles = StyleSheet.create({
   },
   previewActionItem: {
     flex: 1,
+  },
+  audioTimer: {
+    fontFamily: fonts.titleBold,
+    fontSize: 36,
+    color: colors.text,
+  },
+  audioRecordButton: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: colors.surface2,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  audioRecordButtonActive: {
+    backgroundColor: colors.danger,
+    borderColor: colors.danger,
+  },
+  audioActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+  },
+  audioPreviewPlayer: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  audioPlayButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  audioPreviewTime: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 14,
+    color: colors.textMuted,
   },
 });

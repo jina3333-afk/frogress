@@ -77,7 +77,10 @@ export default function Pond() {
 function PondCard({ cycle }: { cycle: CompletedCycle }) {
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
-  const coverUri = cycle.entries[cycle.entries.length - 1]?.rawMediaRef;
+  const lastEntry = cycle.entries[cycle.entries.length - 1];
+  // 영상/음성 파일은 <Image>로 디코딩할 수 없으니 사진일 때만 실제 uri를 넘긴다 —
+  // 그 외엔 바로 ThumbnailImage의 아이콘 플레이스홀더로 떨어진다.
+  const coverUri = lastEntry?.mediaType === 'photo' ? lastEntry.rawMediaRef : undefined;
   // 도메인별로 살짝 다른 커버 톤 — 연한 워시라 전체 뉴트럴 톤을 해치지 않는다.
   const coverTint = lerpColor(config.accentColor, colors.surface, 0.85);
 

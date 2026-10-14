@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Mic, Video as VideoIcon } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
@@ -25,10 +26,7 @@ export default function Highlight() {
     })();
   }, [cycleId]);
 
-  const frames = useMemo(
-    () => cycle?.entries.map((e) => e.processedMediaRef ?? e.rawMediaRef) ?? [],
-    [cycle]
-  );
+  const frames = cycle?.entries ?? [];
 
   useEffect(() => {
     if (frames.length < 2) return;
@@ -57,9 +55,21 @@ export default function Highlight() {
       <Text style={typography.title}>{cycle.entryCount}일간의 변화</Text>
 
       <View style={styles.frameBox}>
-        {frames.length > 0 && (
-          <Image source={{ uri: frames[frameIndex] }} style={styles.frameImage} />
-        )}
+        {currentEntry &&
+          (currentEntry.mediaType === 'photo' ? (
+            <Image
+              source={{ uri: currentEntry.processedMediaRef ?? currentEntry.rawMediaRef }}
+              style={styles.frameImage}
+            />
+          ) : (
+            <View style={styles.frameFallback}>
+              {currentEntry.mediaType === 'video' ? (
+                <VideoIcon size={32} color={colors.textMuted} strokeWidth={2} />
+              ) : (
+                <Mic size={32} color={colors.textMuted} strokeWidth={2} />
+              )}
+            </View>
+          ))}
         <View style={styles.dateBadge}>
           <Text style={styles.dateBadgeText}>
             {currentEntry
@@ -123,6 +133,12 @@ const styles = StyleSheet.create({
   frameImage: {
     width: '100%',
     height: '100%',
+  },
+  frameFallback: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dateBadge: {
     position: 'absolute',
