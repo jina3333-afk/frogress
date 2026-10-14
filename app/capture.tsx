@@ -129,29 +129,30 @@ export default function Capture() {
 
   return (
     <View style={styles.fill}>
-      <CameraView ref={cameraRef} style={styles.fill} facing={facing}>
-        <CaptureGuideOverlay guideType={guide.guideType} />
-        {config.captureGuide.lightingCheck && (
-          <View style={styles.tipBanner}>
-            <Lightbulb size={14} color="#fff" strokeWidth={2.2} />
-            <Text style={styles.tipText}>밝은 곳에서 정면을 향해 촬영해주세요</Text>
-          </View>
-        )}
-        <View style={styles.controls}>
-          <Text onPress={() => router.back()} style={styles.cancelText}>
-            취소
-          </Text>
-          <View style={styles.shutterRing}>
-            <Text
-              onPress={takePhoto}
-              style={styles.shutter}
-              accessibilityRole="button"
-              testID="capture-shutter"
-            />
-          </View>
-          <View style={styles.controlsSpacer} />
+      {/* CameraView는 실기기에서 children을 지원하지 않는다(렌더링되지 않음) —
+          가이드/버튼은 반드시 형제 엘리먼트로 절대위치 오버레이해야 한다. */}
+      <CameraView ref={cameraRef} style={styles.fill} facing={facing} />
+      <CaptureGuideOverlay guideType={guide.guideType} />
+      {config.captureGuide.lightingCheck && (
+        <View style={styles.tipBanner}>
+          <Lightbulb size={14} color="#fff" strokeWidth={2.2} />
+          <Text style={styles.tipText}>밝은 곳에서 정면을 향해 촬영해주세요</Text>
         </View>
-      </CameraView>
+      )}
+      <View style={styles.controls}>
+        <Text onPress={() => router.back()} style={styles.cancelText}>
+          취소
+        </Text>
+        <View style={styles.shutterRing}>
+          <Text
+            onPress={takePhoto}
+            style={styles.shutter}
+            accessibilityRole="button"
+            testID="capture-shutter"
+          />
+        </View>
+        <View style={styles.controlsSpacer} />
+      </View>
     </View>
   );
 }
