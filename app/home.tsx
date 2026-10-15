@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
-import { CircleCheck, PartyPopper, Waves } from 'lucide-react-native';
+import { CircleCheck, PartyPopper, Settings, Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
@@ -66,9 +66,32 @@ export default function Home() {
   const expectedCompletionDate = new Date(cycle.startDate);
   expectedCompletionDate.setDate(expectedCompletionDate.getDate() + cycle.periodDays);
 
+  function handleSettingsPress() {
+    const goToChangeScreen = () =>
+      router.push({ pathname: '/onboarding', params: { mode: 'new_domain' } });
+
+    if (cycle!.entries.length > 0) {
+      Alert.alert(
+        '도메인/기간을 변경할까요?',
+        `지금까지 기록한 ${cycle!.entries.length}일치 기록이 사라져요. 그래도 변경할까요?`,
+        [
+          { text: '취소', style: 'cancel' },
+          { text: '변경하기', style: 'destructive', onPress: goToChangeScreen },
+        ]
+      );
+    } else {
+      goToChangeScreen();
+    }
+  }
+
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Pressable onPress={handleSettingsPress} style={styles.settingsLink}>
+          <Settings size={14} color={colors.textMuted} strokeWidth={2.2} />
+          <Text style={styles.settingsLinkText}>설정</Text>
+        </Pressable>
+
         <View style={styles.header}>
           <View>
             <View style={styles.eyebrowRow}>
@@ -121,7 +144,10 @@ export default function Home() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.thumbRow}
             renderItem={({ item }) => (
-              <View style={styles.thumbWrap}>
+              <Pressable
+                style={styles.thumbWrap}
+                onPress={() => router.push({ pathname: '/entry', params: { entryId: item.id } })}
+              >
                 <ThumbnailImage
                   uri={item.mediaType === 'photo' ? item.rawMediaRef : undefined}
                   style={styles.thumb}
@@ -130,7 +156,7 @@ export default function Home() {
                 <Text style={styles.thumbDate}>
                   {new Date(item.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                 </Text>
-              </View>
+              </Pressable>
             )}
           />
         )}
@@ -162,6 +188,19 @@ export default function Home() {
 const styles = StyleSheet.create({
   scroll: {
     paddingBottom: spacing.lg,
+  },
+  settingsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  settingsLinkText: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 13,
+    color: colors.textMuted,
   },
   header: {
     flexDirection: 'row',

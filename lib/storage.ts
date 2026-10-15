@@ -96,6 +96,20 @@ export async function getCompletedCycleById(id: string): Promise<CompletedCycle 
   return list.find((c) => c.id === id) ?? null;
 }
 
+/** 진행 중/완료된 사이클을 통틀어 엔트리 id로 단일 기록을 찾는다 (최근 기록 상세보기용). */
+export async function getEntryById(entryId: string): Promise<Entry | null> {
+  const active = await getActiveCycle();
+  const activeMatch = active?.entries.find((e) => e.id === entryId);
+  if (activeMatch) return activeMatch;
+
+  const completed = await getCompletedCycles();
+  for (const cycle of completed) {
+    const match = cycle.entries.find((e) => e.id === entryId);
+    if (match) return match;
+  }
+  return null;
+}
+
 export async function resetAll(): Promise<void> {
   await AsyncStorage.multiRemove([KEYS.onboarded, KEYS.activeCycle, KEYS.completedCycles]);
 }

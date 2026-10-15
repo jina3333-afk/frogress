@@ -1,6 +1,6 @@
 import { CameraMode, CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
-import { Lightbulb, Mic, Pause, Play } from 'lucide-react-native';
+import { Lightbulb, Mic } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import {
@@ -8,29 +8,22 @@ import {
   RecordingPresets,
   getRecordingPermissionsAsync,
   requestRecordingPermissionsAsync,
-  useAudioPlayer,
-  useAudioPlayerStatus,
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { AudioPreviewPlayer } from '../components/AudioPreviewPlayer';
 import { CaptureGuideOverlay } from '../components/CaptureGuideOverlay';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { VideoPreviewPlayer } from '../components/VideoPreviewPlayer';
 import { analyzePhoto } from '../lib/analysis';
 import { getDomainConfig } from '../lib/domains';
+import { formatDuration } from '../lib/format';
 import { PhotoTimelapseGenerator, alignEntryMedia } from '../lib/highlight';
 import { generateId } from '../lib/id';
 import { addEntryToActiveCycle, completeActiveCycle, getActiveCycle } from '../lib/storage';
 import { Entry, MediaType } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
-
-function formatDuration(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-}
 
 /** 엔트리 저장 + 사이클 완료 여부에 따른 후속 네비게이션. 캡처 모드(사진/동영상/음성) 공통 로직. */
 async function saveEntryAndNavigate(params: {
@@ -85,16 +78,6 @@ export default function Capture() {
     <AudioCapture domain={cycleDomain} />
   ) : (
     <PhotoVideoCapture domain={cycleDomain} />
-  );
-}
-
-function VideoPreviewPlayer({ uri }: { uri: string }) {
-  const player = useVideoPlayer(uri, (p) => {
-    p.loop = true;
-    p.play();
-  });
-  return (
-    <VideoView player={player} style={styles.previewImage} nativeControls contentFit="contain" />
   );
 }
 
@@ -207,7 +190,7 @@ function PhotoVideoCapture({ domain }: { domain: string }) {
         {photoUri ? (
           <Image source={{ uri: photoUri }} style={styles.previewImage} />
         ) : (
-          <VideoPreviewPlayer uri={videoUri!} />
+          <VideoPreviewPlayer uri={videoUri!} style={styles.previewImage} />
         )}
         {processing ? (
           <View style={styles.processingRow}>
@@ -308,29 +291,6 @@ function PhotoVideoCapture({ domain }: { domain: string }) {
           <View style={styles.controlsSpacer} />
         </View>
       </View>
-    </View>
-  );
-}
-
-function AudioPreviewPlayer({ uri }: { uri: string }) {
-  const player = useAudioPlayer(uri);
-  const status = useAudioPlayerStatus(player);
-
-  return (
-    <View style={styles.audioPreviewPlayer}>
-      <Pressable
-        onPress={() => (status.playing ? player.pause() : player.play())}
-        style={styles.audioPlayButton}
-      >
-        {status.playing ? (
-          <Pause size={28} color={colors.surface} strokeWidth={2.2} />
-        ) : (
-          <Play size={28} color={colors.surface} strokeWidth={2.2} />
-        )}
-      </Pressable>
-      <Text style={styles.audioPreviewTime}>
-        {formatDuration(status.currentTime * 1000)} / {formatDuration(status.duration * 1000)}
-      </Text>
     </View>
   );
 }
@@ -606,22 +566,5 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     width: '100%',
     paddingHorizontal: spacing.lg,
-  },
-  audioPreviewPlayer: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  audioPlayButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  audioPreviewTime: {
-    fontFamily: fonts.bodyMedium,
-    fontSize: 14,
-    color: colors.textMuted,
   },
 });
