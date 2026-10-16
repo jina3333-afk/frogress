@@ -29,9 +29,9 @@ export default function Transition() {
 
   async function handleContinueSame() {
     setBusy(true);
-    await startNewCycle(domain, parseInt(periodDays, 10));
+    const cycle = await startNewCycle(domain, parseInt(periodDays, 10));
     setBusy(false);
-    router.replace('/home');
+    router.replace({ pathname: '/home', params: { cycleId: cycle.id } });
   }
 
   const recentThumbs = completedCycle ? [...completedCycle.entries].reverse().slice(0, 3) : [];

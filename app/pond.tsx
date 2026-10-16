@@ -7,7 +7,7 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { ThumbnailImage } from '../components/ThumbnailImage';
 import { lerpColor } from '../lib/color';
 import { getDomainConfig } from '../lib/domains';
-import { getActiveCycle, getCompletedCycles } from '../lib/storage';
+import { getActiveCycles, getCompletedCycles } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -24,7 +24,7 @@ export default function Pond() {
     useCallback(() => {
       (async () => {
         setCycles(await getCompletedCycles());
-        setHasActive(!!(await getActiveCycle()));
+        setHasActive((await getActiveCycles()).length > 0);
       })();
     }, [])
   );
@@ -45,7 +45,7 @@ export default function Pond() {
           <Text style={typography.title}>완성된 기록 {cycles.length}개</Text>
         </View>
         {hasActive && (
-          <Text style={styles.backLink} onPress={() => router.replace('/home')}>
+          <Text style={styles.backLink} onPress={() => router.replace('/dashboard')}>
             홈으로
           </Text>
         )}

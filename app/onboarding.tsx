@@ -1,12 +1,12 @@
 import { Check, Film, LucideIcon, Plus } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { DOMAIN_CONFIGS, PERIOD_PRESETS, getDomainConfig } from '../lib/domains';
-import { markOnboarded, startNewCycle } from '../lib/storage';
+import { getActiveCycleByDomain, markOnboarded, startNewCycle } from '../lib/storage';
 import { Domain } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -35,13 +35,36 @@ export default function Onboarding() {
     }
   }
 
-  async function handleStart() {
-    if (!resolvedDomain || !periodDays) return;
+  async function proceedStart(targetDomain: Domain, targetPeriodDays: number) {
     setStarting(true);
     await markOnboarded();
-    await startNewCycle(resolvedDomain, periodDays);
+    const cycle = await startNewCycle(targetDomain, targetPeriodDays);
     setStarting(false);
-    router.replace('/home');
+    router.replace({ pathname: '/home', params: { cycleId: cycle.id } });
+  }
+
+  async function handleStart() {
+    if (!resolvedDomain || !periodDays) return;
+
+    // 같은 도메인에 이미 기록이 있으면 startNewCycle이 그대로 덮어써버리니, 지우기 전에 확인한다.
+    const existing = await getActiveCycleByDomain(resolvedDomain);
+    if (existing && existing.entries.length > 0) {
+      Alert.alert(
+        '정말 다시 시작할까요?',
+        `${getDomainConfig(resolvedDomain).label} 기록 ${existing.entries.length}일치가 사라져요.`,
+        [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '다시 시작',
+            style: 'destructive',
+            onPress: () => proceedStart(resolvedDomain, periodDays),
+          },
+        ]
+      );
+      return;
+    }
+
+    await proceedStart(resolvedDomain, periodDays);
   }
 
   return (

@@ -1,13 +1,20 @@
-import { router, useFocusEffect } from 'expo-router';
-import { CircleCheck, Mic, PartyPopper, Settings, Video as VideoIcon, Waves } from 'lucide-react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import {
+  ChevronLeft,
+  CircleCheck,
+  Mic,
+  PartyPopper,
+  Video as VideoIcon,
+  Waves,
+} from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { ThumbnailImage } from '../components/ThumbnailImage';
 import { getDomainConfig } from '../lib/domains';
-import { getActiveCycle, hasEntryToday } from '../lib/storage';
+import { getActiveCycleById, hasEntryToday } from '../lib/storage';
 import { ActiveCycle, Entry } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -27,6 +34,7 @@ function calculateStreak(entries: Entry[]): number {
 }
 
 export default function Home() {
+  const { cycleId } = useLocalSearchParams<{ cycleId?: string }>();
   const [cycle, setCycle] = useState<ActiveCycle | null>(null);
   const [recordedToday, setRecordedToday] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,20 +43,24 @@ export default function Home() {
     useCallback(() => {
       let alive = true;
       (async () => {
-        const active = await getActiveCycle();
+        if (!cycleId) {
+          router.replace('/dashboard');
+          return;
+        }
+        const active = await getActiveCycleById(cycleId);
         if (!alive) return;
         if (!active) {
-          router.replace('/onboarding');
+          router.replace('/dashboard');
           return;
         }
         setCycle(active);
-        setRecordedToday(await hasEntryToday());
+        setRecordedToday(await hasEntryToday(cycleId));
         setLoading(false);
       })();
       return () => {
         alive = false;
       };
-    }, [])
+    }, [cycleId])
   );
 
   if (loading || !cycle) {
@@ -66,46 +78,28 @@ export default function Home() {
   const expectedCompletionDate = new Date(cycle.startDate);
   expectedCompletionDate.setDate(expectedCompletionDate.getDate() + cycle.periodDays);
 
-  function handleSettingsPress() {
-    const goToChangeScreen = () =>
-      router.push({ pathname: '/onboarding', params: { mode: 'new_domain' } });
-
-    if (cycle!.entries.length > 0) {
-      Alert.alert(
-        '도메인/기간을 변경할까요?',
-        `지금까지 기록한 ${cycle!.entries.length}일치 기록이 사라져요. 그래도 변경할까요?`,
-        [
-          { text: '취소', style: 'cancel' },
-          { text: '변경하기', style: 'destructive', onPress: goToChangeScreen },
-        ]
-      );
-    } else {
-      goToChangeScreen();
-    }
-  }
-
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Pressable onPress={handleSettingsPress} style={styles.settingsLink}>
-          <Settings size={14} color={colors.textMuted} strokeWidth={2.2} />
-          <Text style={styles.settingsLinkText}>설정</Text>
-        </Pressable>
-
-        <View style={styles.header}>
-          <View>
-            <View style={styles.eyebrowRow}>
-              <Icon size={15} color={colors.textMuted} strokeWidth={2.4} />
-              <Text style={styles.eyebrow}>{config.label} 기록</Text>
-            </View>
-            <Text style={typography.title}>
-              {cycle.entries.length}/{cycle.periodDays}일째
-            </Text>
-          </View>
+        <View style={styles.topRow}>
+          <Pressable onPress={() => router.replace('/dashboard')} style={styles.backLink}>
+            <ChevronLeft size={16} color={colors.textMuted} strokeWidth={2.4} />
+            <Text style={styles.backLinkText}>나의 기록</Text>
+          </Pressable>
           <Pressable onPress={() => router.push('/pond')} style={styles.pondLink}>
             <Waves size={16} color={colors.textMuted} strokeWidth={2.2} />
             <Text style={styles.pondLinkText}>연못</Text>
           </Pressable>
+        </View>
+
+        <View style={styles.header}>
+          <View style={styles.eyebrowRow}>
+            <Icon size={15} color={colors.textMuted} strokeWidth={2.4} />
+            <Text style={styles.eyebrow}>{config.label} 기록</Text>
+          </View>
+          <Text style={typography.title}>
+            {cycle.entries.length}/{cycle.periodDays}일째
+          </Text>
         </View>
 
         <View style={styles.growthCard}>
@@ -122,14 +116,20 @@ export default function Home() {
 
         <View style={styles.actionArea}>
           {goalReached ? (
-            <PrimaryButton label="하이라이트 보러가기" onPress={() => router.push('/highlight')} />
+            <PrimaryButton
+              label="하이라이트 보러가기"
+              onPress={() => router.push('/highlight')}
+            />
           ) : recordedToday ? (
             <View style={styles.completedBadge}>
               <CircleCheck size={18} color={colors.accentDark} strokeWidth={2.2} />
               <Text style={styles.completedBadgeText}>오늘 기록 완료</Text>
             </View>
           ) : (
-            <PrimaryButton label="오늘 기록하기" onPress={() => router.push('/capture')} />
+            <PrimaryButton
+              label="오늘 기록하기"
+              onPress={() => router.push({ pathname: '/capture', params: { cycleId: cycle.id } })}
+            />
           )}
         </View>
 
@@ -159,7 +159,13 @@ export default function Home() {
                     uri={thumbUri}
                     style={styles.thumb}
                     iconSize={22}
-                    icon={item.mediaType === 'audio' ? Mic : item.mediaType === 'video' ? VideoIcon : undefined}
+                    icon={
+                      item.mediaType === 'audio'
+                        ? Mic
+                        : item.mediaType === 'video'
+                          ? VideoIcon
+                          : undefined
+                    }
                   />
                   <Text style={styles.thumbDate}>
                     {new Date(item.date).toLocaleDateString('ko-KR', {
@@ -187,7 +193,10 @@ export default function Home() {
           <View style={styles.statDivider} />
           <View style={styles.statTile}>
             <Text style={styles.statValue}>
-              {expectedCompletionDate.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+              {expectedCompletionDate.toLocaleDateString('ko-KR', {
+                month: 'short',
+                day: 'numeric',
+              })}
             </Text>
             <Text style={styles.statLabel}>예상 완료일</Text>
           </View>
@@ -201,23 +210,24 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: spacing.lg,
   },
-  settingsLink: {
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  backLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
+    gap: 2,
     paddingVertical: spacing.xs,
-    marginBottom: spacing.xs,
   },
-  settingsLinkText: {
+  backLinkText: {
     fontFamily: fonts.bodySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textMuted,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
     marginBottom: spacing.lg,
   },
   eyebrowRow: {

@@ -1,5 +1,5 @@
 import { CameraMode, CameraType, CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Lightbulb, Mic } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -22,12 +22,13 @@ import { getDomainConfig } from '../lib/domains';
 import { formatDuration } from '../lib/format';
 import { PhotoTimelapseGenerator, alignEntryMedia } from '../lib/highlight';
 import { generateId } from '../lib/id';
-import { addEntryToActiveCycle, completeActiveCycle, getActiveCycle } from '../lib/storage';
+import { addEntryToActiveCycle, completeActiveCycle, getActiveCycleById } from '../lib/storage';
 import { Entry, MediaType } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
 /** 엔트리 저장 + 사이클 완료 여부에 따른 후속 네비게이션. 캡처 모드(사진/동영상/음성) 공통 로직. */
 async function saveEntryAndNavigate(params: {
+  cycleId: string;
   domain: string;
   mediaType: MediaType;
   rawMediaRef: string;
@@ -46,45 +47,50 @@ async function saveEntryAndNavigate(params: {
     metrics: params.metrics,
   };
 
-  const updatedCycle = await addEntryToActiveCycle(entry);
+  const updatedCycle = await addEntryToActiveCycle(params.cycleId, entry);
 
   if (updatedCycle && updatedCycle.entries.length >= updatedCycle.periodDays) {
     const generator = new PhotoTimelapseGenerator();
     const highlight = await generator.generate(updatedCycle.entries);
-    await completeActiveCycle(highlight.ref);
+    await completeActiveCycle(params.cycleId, highlight.ref);
     router.replace('/highlight');
   } else {
-    router.replace('/home');
+    router.replace({ pathname: '/home', params: { cycleId: params.cycleId } });
   }
 }
 
 export default function Capture() {
+  const { cycleId } = useLocalSearchParams<{ cycleId?: string }>();
   const [cycleDomain, setCycleDomain] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const cycle = await getActiveCycle();
+      if (!cycleId) {
+        router.replace('/dashboard');
+        return;
+      }
+      const cycle = await getActiveCycleById(cycleId);
       if (!cycle) {
-        router.replace('/onboarding');
+        router.replace('/dashboard');
         return;
       }
       setCycleDomain(cycle.domain);
     })();
-  }, []);
+  }, [cycleId]);
 
-  if (!cycleDomain) {
+  if (!cycleDomain || !cycleId) {
     return <ScreenContainer />;
   }
 
   const config = getDomainConfig(cycleDomain);
   return config.mediaType === 'audio' ? (
-    <AudioCapture domain={cycleDomain} />
+    <AudioCapture domain={cycleDomain} cycleId={cycleId} />
   ) : (
-    <PhotoVideoCapture domain={cycleDomain} />
+    <PhotoVideoCapture domain={cycleDomain} cycleId={cycleId} />
   );
 }
 
-function PhotoVideoCapture({ domain }: { domain: string }) {
+function PhotoVideoCapture({ domain, cycleId }: { domain: string; cycleId: string }) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -166,9 +172,10 @@ function PhotoVideoCapture({ domain }: { domain: string }) {
       const processedUri = await alignEntryMedia(photoUri);
       // 분석 실패(네트워크 오류, API 키 미설정 등)는 analyzePhoto가 null로 삼켜서
       // 돌려준다 — 사진 저장 자체는 분석 성공 여부와 무관하게 항상 진행된다.
-      const activeCycle = await getActiveCycle();
+      const activeCycle = await getActiveCycleById(cycleId);
       const metrics = (await analyzePhoto(photoUri, domain, activeCycle?.entries ?? [])) ?? {};
       await saveEntryAndNavigate({
+        cycleId,
         domain,
         mediaType: 'photo',
         rawMediaRef: photoUri,
@@ -186,6 +193,7 @@ function PhotoVideoCapture({ domain }: { domain: string }) {
         thumbnailRef = undefined;
       }
       await saveEntryAndNavigate({
+        cycleId,
         domain,
         mediaType: 'video',
         rawMediaRef: videoUri,
@@ -308,7 +316,7 @@ function PhotoVideoCapture({ domain }: { domain: string }) {
   );
 }
 
-function AudioCapture({ domain }: { domain: string }) {
+function AudioCapture({ domain, cycleId }: { domain: string; cycleId: string }) {
   const [permission, setPermission] = useState<PermissionResponse | null>(null);
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -341,6 +349,7 @@ function AudioCapture({ domain }: { domain: string }) {
     if (!recordedUri) return;
     setProcessing(true);
     await saveEntryAndNavigate({
+      cycleId,
       domain,
       mediaType: 'audio',
       rawMediaRef: recordedUri,
