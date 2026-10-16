@@ -11,6 +11,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
+import { getThumbnailAsync } from 'expo-video-thumbnails';
 import { AudioPreviewPlayer } from '../components/AudioPreviewPlayer';
 import { CaptureGuideOverlay } from '../components/CaptureGuideOverlay';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -31,6 +32,7 @@ async function saveEntryAndNavigate(params: {
   mediaType: MediaType;
   rawMediaRef: string;
   processedMediaRef?: string;
+  thumbnailRef?: string;
   metrics: Record<string, number | string>;
 }) {
   const entry: Entry = {
@@ -40,6 +42,7 @@ async function saveEntryAndNavigate(params: {
     date: new Date().toISOString(),
     rawMediaRef: params.rawMediaRef,
     processedMediaRef: params.processedMediaRef,
+    thumbnailRef: params.thumbnailRef,
     metrics: params.metrics,
   };
 
@@ -173,10 +176,20 @@ function PhotoVideoCapture({ domain }: { domain: string }) {
         metrics,
       });
     } else if (videoUri) {
+      // 썸네일 생성 실패해도(코덱 문제 등) 동영상 저장 자체는 막지 않는다 — 실패하면
+      // thumbnailRef 없이 저장되고, 홈/연못에서는 기존 아이콘 플레이스홀더로 대체된다.
+      let thumbnailRef: string | undefined;
+      try {
+        const thumbnail = await getThumbnailAsync(videoUri, { time: 0 });
+        thumbnailRef = thumbnail.uri;
+      } catch {
+        thumbnailRef = undefined;
+      }
       await saveEntryAndNavigate({
         domain,
         mediaType: 'video',
         rawMediaRef: videoUri,
+        thumbnailRef,
         metrics: {},
       });
     }

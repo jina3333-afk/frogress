@@ -29,6 +29,8 @@ export interface Entry {
   date: string; // ISO
   rawMediaRef: string;
   processedMediaRef?: string; // 정렬/보정 후
+  /** 동영상 엔트리의 썸네일 이미지 uri. 사진은 rawMediaRef 자체를 쓰므로 불필요. */
+  thumbnailRef?: string;
   metrics: Record<string, number | string>;
   aiSummary?: string;
 }

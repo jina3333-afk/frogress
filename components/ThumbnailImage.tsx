@@ -1,4 +1,4 @@
-import { Camera } from 'lucide-react-native';
+import { Camera, LucideIcon } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Image, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { colors } from '../theme';
@@ -11,13 +11,22 @@ interface Props {
   tintColor?: string;
   /** 플레이스홀더 아이콘 색. 기본은 중립 textMuted. */
   iconColor?: string;
+  /** 플레이스홀더 아이콘. 기본은 Camera — 음성 엔트리처럼 성격이 다른 미디어엔 다른 아이콘을 지정. */
+  icon?: LucideIcon;
 }
 
 /**
- * 기록 사진 썸네일. uri가 없거나 로드에 실패하면 카메라 아이콘 플레이스홀더로 대체한다.
+ * 기록 사진/동영상 썸네일. uri가 없거나 로드에 실패하면 아이콘 플레이스홀더로 대체한다.
  * 실제 캡처 파이프라인과 무관하게 항상 같은 최소한의 빈 상태를 보여준다.
  */
-export function ThumbnailImage({ uri, style, iconSize = 20, tintColor, iconColor }: Props) {
+export function ThumbnailImage({
+  uri,
+  style,
+  iconSize = 20,
+  tintColor,
+  iconColor,
+  icon: Icon = Camera,
+}: Props) {
   const [failed, setFailed] = useState(false);
   const showImage = !!uri && !failed;
 
@@ -30,7 +39,7 @@ export function ThumbnailImage({ uri, style, iconSize = 20, tintColor, iconColor
           onError={() => setFailed(true)}
         />
       ) : (
-        <Camera size={iconSize} color={iconColor ?? colors.textMuted} strokeWidth={2} />
+        <Icon size={iconSize} color={iconColor ?? colors.textMuted} strokeWidth={2} />
       )}
     </View>
   );

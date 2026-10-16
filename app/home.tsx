@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { CircleCheck, PartyPopper, Settings, Waves } from 'lucide-react-native';
+import { CircleCheck, Mic, PartyPopper, Settings, Video as VideoIcon, Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
@@ -143,21 +143,33 @@ export default function Home() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.thumbRow}
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.thumbWrap}
-                onPress={() => router.push({ pathname: '/entry', params: { entryId: item.id } })}
-              >
-                <ThumbnailImage
-                  uri={item.mediaType === 'photo' ? item.rawMediaRef : undefined}
-                  style={styles.thumb}
-                  iconSize={22}
-                />
-                <Text style={styles.thumbDate}>
-                  {new Date(item.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                </Text>
-              </Pressable>
-            )}
+            renderItem={({ item }) => {
+              const thumbUri =
+                item.mediaType === 'photo'
+                  ? item.rawMediaRef
+                  : item.mediaType === 'video'
+                    ? item.thumbnailRef
+                    : undefined;
+              return (
+                <Pressable
+                  style={styles.thumbWrap}
+                  onPress={() => router.push({ pathname: '/entry', params: { entryId: item.id } })}
+                >
+                  <ThumbnailImage
+                    uri={thumbUri}
+                    style={styles.thumb}
+                    iconSize={22}
+                    icon={item.mediaType === 'audio' ? Mic : item.mediaType === 'video' ? VideoIcon : undefined}
+                  />
+                  <Text style={styles.thumbDate}>
+                    {new Date(item.date).toLocaleDateString('ko-KR', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                </Pressable>
+              );
+            }}
           />
         )}
 
