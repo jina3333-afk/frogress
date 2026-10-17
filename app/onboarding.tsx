@@ -1,7 +1,17 @@
 import { Check, Film, LucideIcon, Plus } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
@@ -70,122 +80,129 @@ export default function Onboarding() {
   return (
     <ScreenContainer>
       <OnboardingDots step={step} />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoider}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
-        <View style={styles.contentGroup}>
-          <View style={styles.wordmark}>
-            <FrogGrowth progress={1} size={22} />
-            <Text style={styles.eyebrow}>Frogress</Text>
-          </View>
-          <Text style={typography.title}>
-            {step === 0 ? '무엇을 기록할까요?' : '얼마 동안 기록할까요?'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {step === 0
-              ? '매일 사진 한 장으로 작은 변화를 쌓아가요.'
-              : `${getDomainConfig(resolvedDomain || 'skin').label} 기록 기간을 정해주세요.`}
-          </Text>
-
-          {step === 0 && (
-            <View style={styles.domainList}>
-              {DOMAIN_CONFIGS.map((config) => (
-                <DomainCard
-                  key={config.domain}
-                  icon={config.icon}
-                  label={config.label}
-                  description={config.description}
-                  selected={domain === config.domain}
-                  onPress={() => selectDomain(config.domain)}
-                />
-              ))}
-              <DomainCard
-                icon={Plus}
-                label="커스텀"
-                description="나만의 도메인을 직접 만들어요"
-                selected={domain === 'custom'}
-                onPress={() => selectDomain('custom')}
-              />
-              {domain === 'custom' && (
-                <TextInput
-                  style={styles.input}
-                  placeholder="예: 독서, 명상, 식단..."
-                  placeholderTextColor={colors.textMuted}
-                  value={customDomain}
-                  onChangeText={setCustomDomain}
-                />
-              )}
-            </View>
-          )}
-
-          {step === 1 && (
-            <View style={styles.grid}>
-              {PERIOD_PRESETS.map((preset) => (
-                <PeriodCard
-                  key={preset}
-                  days={preset}
-                  selected={periodDays === preset}
-                  onPress={() => {
-                    setPeriodDays(preset);
-                    setCustomPeriod('');
-                  }}
-                />
-              ))}
-              <View style={styles.customPeriodRow}>
-                <Text style={styles.body}>직접 입력</Text>
-                <TextInput
-                  style={styles.periodInput}
-                  keyboardType="number-pad"
-                  placeholder="일"
-                  placeholderTextColor={colors.textMuted}
-                  value={customPeriod}
-                  onChangeText={(text) => {
-                    setCustomPeriod(text);
-                    const n = parseInt(text, 10);
-                    setPeriodDays(Number.isFinite(n) && n > 0 ? n : null);
-                  }}
-                />
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+            <View style={styles.contentGroup}>
+              <View style={styles.wordmark}>
+                <FrogGrowth progress={1} size={22} />
+                <Text style={styles.eyebrow}>Frogress</Text>
               </View>
-            </View>
-          )}
-
-          <View style={styles.mascot}>
-            <FrogGrowth progress={step === 0 ? 0.15 : 0.5} size={64} />
-          </View>
-
-          {step === 1 && periodDays && (
-            <View style={styles.previewCard}>
-              <View style={styles.previewIconWrap}>
-                <Film size={18} color={colors.textMuted} strokeWidth={2.2} />
-              </View>
-              <Text style={styles.previewCardText}>
-                <Text style={styles.previewCardStrong}>{periodDays}일</Text> 뒤 첫 하이라이트
-                영상을 보게 돼요
+              <Text style={typography.title}>
+                {step === 0 ? '무엇을 기록할까요?' : '얼마 동안 기록할까요?'}
               </Text>
-            </View>
-          )}
+              <Text style={styles.subtitle}>
+                {step === 0
+                  ? '매일 사진 한 장으로 작은 변화를 쌓아가요.'
+                  : `${getDomainConfig(resolvedDomain || 'skin').label} 기록 기간을 정해주세요.`}
+              </Text>
 
-          <View style={styles.footer}>
-            {step === 0 ? (
-              <PrimaryButton
-                label="다음"
-                onPress={() => setStep(1)}
-                disabled={!resolvedDomain}
-              />
-            ) : (
-              <PrimaryButton
-                label={`${periodDays ?? ''}일 기록 시작하기`}
-                onPress={handleStart}
-                disabled={!periodDays}
-                loading={starting}
-              />
-            )}
-          </View>
-        </View>
-      </ScrollView>
-    </ScreenContainer>
-  );
+              {step === 0 && (
+                <View style={styles.domainList}>
+                  {DOMAIN_CONFIGS.map((config) => (
+                    <DomainCard
+                      key={config.domain}
+                      icon={config.icon}
+                      label={config.label}
+                      description={config.description}
+                      selected={domain === config.domain}
+                      onPress={() => selectDomain(config.domain)}
+                    />
+                  ))}
+                  <DomainCard
+                    icon={Plus}
+                    label="커스텀"
+                    description="나만의 도메인을 직접 만들어요"
+                    selected={domain === 'custom'}
+                    onPress={() => selectDomain('custom')}
+                  />
+                  {domain === 'custom' && (
+                    <TextInput
+                      style={styles.input}
+                      placeholder="예: 독서, 명상, 식단..."
+                      placeholderTextColor={colors.textMuted}
+                      value={customDomain}
+                      onChangeText={setCustomDomain}
+                    />
+                  )}
+                </View>
+              )}
+
+              {step === 1 && (
+                <View style={styles.grid}>
+                  {PERIOD_PRESETS.map((preset) => (
+                    <PeriodCard
+                      key={preset}
+                      days={preset}
+                      selected={periodDays === preset}
+                      onPress={() => {
+                        setPeriodDays(preset);
+                        setCustomPeriod('');
+                      }}
+                    />
+                  ))}
+                  <View style={styles.customPeriodRow}>
+                    <Text style={styles.body}>직접 입력</Text>
+                    <TextInput
+                      style={styles.periodInput}
+                      keyboardType="number-pad"
+                      placeholder="일"
+                      placeholderTextColor={colors.textMuted}
+                      value={customPeriod}
+                      onChangeText={(text) => {
+                        setCustomPeriod(text);
+                        const n = parseInt(text, 10);
+                        setPeriodDays(Number.isFinite(n) && n > 0 ? n : null);
+                      }}
+                    />
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.mascot}>
+                <FrogGrowth progress={step === 0 ? 0.15 : 0.5} size={64} />
+              </View>
+
+              {step === 1 && periodDays && (
+                <View style={styles.previewCard}>
+                  <View style={styles.previewIconWrap}>
+                    <Film size={18} color={colors.textMuted} strokeWidth={2.2} />
+                  </View>
+                  <Text style={styles.previewCardText}>
+                    <Text style={styles.previewCardStrong}>{periodDays}일</Text> 뒤 첫 하이라이트
+                    영상을 보게 돼요
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.footer}>
+                {step === 0 ? (
+                  <PrimaryButton
+                    label="다음"
+                    onPress={() => setStep(1)}
+                    disabled={!resolvedDomain}
+                  />
+                ) : (
+                  <PrimaryButton
+                    label={`${periodDays ?? ''}일 기록 시작하기`}
+                    onPress={handleStart}
+                    disabled={!periodDays}
+                    loading={starting}
+                  />
+                )}
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ScreenContainer>
+    );
 }
 
 function OnboardingDots({ step, total = 8 }: { step: number; total?: number }) {
@@ -285,6 +302,9 @@ const styles = StyleSheet.create({
   dotActive: {
     backgroundColor: colors.accent,
     width: 18,
+  },
+  keyboardAvoider: {
+    flex: 1,
   },
   scroll: {
     flexGrow: 1,
