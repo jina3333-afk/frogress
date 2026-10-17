@@ -1,6 +1,6 @@
 import { Check, Film, LucideIcon, Plus } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -36,7 +36,28 @@ export default function Onboarding() {
   const [customPeriod, setCustomPeriod] = useState('');
   const [starting, setStarting] = useState(false);
 
+  const scrollRef = useRef<ScrollView>(null);
+  const contentRef = useRef<View>(null);
+  const customDomainInputRef = useRef<TextInput>(null);
+  const periodInputRef = useRef<TextInput>(null);
+
   const resolvedDomain = domain === 'custom' ? customDomain.trim() : domain;
+
+  // KeyboardAvoidingView만으로는 포커스된 입력칸이 키보드에 가려지는 걸 막지 못해서
+  // (특히 contentContainerStyle이 justifyContent: 'center'였을 때 전혀 동작하지 않았다),
+  // 포커스 시 해당 입력칸까지 직접 스크롤시킨다.
+  function scrollInputIntoView(inputRef: React.RefObject<TextInput | null>) {
+    requestAnimationFrame(() => {
+      if (!inputRef.current || !contentRef.current) return;
+      inputRef.current.measureLayout(
+        contentRef.current as unknown as React.ComponentRef<typeof View>,
+        (_x: number, y: number) => {
+          scrollRef.current?.scrollTo({ y: Math.max(y - 140, 0), animated: true });
+        },
+        () => {}
+      );
+    });
+  }
 
   function selectDomain(value: Domain | 'custom') {
     setDomain(value);
@@ -83,14 +104,14 @@ export default function Onboarding() {
       <KeyboardAvoidingView
         style={styles.keyboardAvoider}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-            <View style={styles.contentGroup}>
+            <View style={styles.contentGroup} ref={contentRef}>
               <View style={styles.wordmark}>
                 <FrogGrowth progress={1} size={22} />
                 <Text style={styles.eyebrow}>Frogress</Text>
@@ -125,11 +146,13 @@ export default function Onboarding() {
                   />
                   {domain === 'custom' && (
                     <TextInput
+                      ref={customDomainInputRef}
                       style={styles.input}
                       placeholder="예: 독서, 명상, 식단..."
                       placeholderTextColor={colors.textMuted}
                       value={customDomain}
                       onChangeText={setCustomDomain}
+                      onFocus={() => scrollInputIntoView(customDomainInputRef)}
                     />
                   )}
                 </View>
@@ -151,6 +174,7 @@ export default function Onboarding() {
                   <View style={styles.customPeriodRow}>
                     <Text style={styles.body}>직접 입력</Text>
                     <TextInput
+                      ref={periodInputRef}
                       style={styles.periodInput}
                       keyboardType="number-pad"
                       placeholder="일"
@@ -161,6 +185,7 @@ export default function Onboarding() {
                         const n = parseInt(text, 10);
                         setPeriodDays(Number.isFinite(n) && n > 0 ? n : null);
                       }}
+                      onFocus={() => scrollInputIntoView(periodInputRef)}
                     />
                   </View>
                 </View>
@@ -308,8 +333,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.xl * 2,
   },
   contentGroup: {
     width: '100%',
