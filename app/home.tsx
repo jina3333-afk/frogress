@@ -135,7 +135,7 @@ export default function Home() {
 
         <Text style={styles.sectionTitle}>최근 기록</Text>
         {recentEntries.length === 0 ? (
-          <Text style={styles.emptyText}>아직 기록이 없어요. 첫 사진을 남겨보세요!</Text>
+          <Text style={styles.emptyText}>아직 기록이 없어요. 첫 기록을 남겨보세요!</Text>
         ) : (
           <FlatList
             data={recentEntries}
