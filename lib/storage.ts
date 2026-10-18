@@ -11,8 +11,17 @@ const KEYS = {
   completedCycles: 'frogress:completedCycles',
 };
 
+// AsyncStorage 네이티브 모듈이 죽어있거나(버전 불일치), 디스크 I/O가 실패하는 등
+// 어떤 이유로든 읽기/쓰기가 거부될 수 있다 — 이 레이어가 그 예외를 전부 삼켜서,
+// 호출부(화면들)는 항상 "그냥 빈 상태"를 받고 영구 로딩에 멈추지 않도록 한다.
 async function readJson<T>(key: string): Promise<T | null> {
-  const raw = await AsyncStorage.getItem(key);
+  let raw: string | null;
+  try {
+    raw = await AsyncStorage.getItem(key);
+  } catch (error) {
+    console.warn(`[storage] getItem(${key}) failed`, error);
+    return null;
+  }
   if (!raw) return null;
   try {
     return JSON.parse(raw) as T;
@@ -22,16 +31,28 @@ async function readJson<T>(key: string): Promise<T | null> {
 }
 
 async function writeJson(key: string, value: unknown): Promise<void> {
-  await AsyncStorage.setItem(key, JSON.stringify(value));
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn(`[storage] setItem(${key}) failed`, error);
+  }
 }
 
 export async function hasOnboarded(): Promise<boolean> {
-  const raw = await AsyncStorage.getItem(KEYS.onboarded);
-  return raw === '1';
+  try {
+    return (await AsyncStorage.getItem(KEYS.onboarded)) === '1';
+  } catch (error) {
+    console.warn('[storage] hasOnboarded failed', error);
+    return false;
+  }
 }
 
 export async function markOnboarded(): Promise<void> {
-  await AsyncStorage.setItem(KEYS.onboarded, '1');
+  try {
+    await AsyncStorage.setItem(KEYS.onboarded, '1');
+  } catch (error) {
+    console.warn('[storage] markOnboarded failed', error);
+  }
 }
 
 export async function getActiveCycles(): Promise<ActiveCycle[]> {
@@ -42,7 +63,11 @@ export async function getActiveCycles(): Promise<ActiveCycle[]> {
   const legacy = await readJson<ActiveCycle>(KEYS.legacyActiveCycle);
   if (legacy) {
     await writeJson(KEYS.activeCycles, [legacy]);
-    await AsyncStorage.removeItem(KEYS.legacyActiveCycle);
+    try {
+      await AsyncStorage.removeItem(KEYS.legacyActiveCycle);
+    } catch (error) {
+      console.warn('[storage] removing legacy key failed', error);
+    }
     return [legacy];
   }
   return [];
@@ -152,10 +177,14 @@ export async function getEntryById(entryId: string): Promise<Entry | null> {
 }
 
 export async function resetAll(): Promise<void> {
-  await AsyncStorage.multiRemove([
-    KEYS.onboarded,
-    KEYS.activeCycles,
-    KEYS.legacyActiveCycle,
-    KEYS.completedCycles,
-  ]);
+  try {
+    await AsyncStorage.multiRemove([
+      KEYS.onboarded,
+      KEYS.activeCycles,
+      KEYS.legacyActiveCycle,
+      KEYS.completedCycles,
+    ]);
+  } catch (error) {
+    console.warn('[storage] resetAll failed', error);
+  }
 }
