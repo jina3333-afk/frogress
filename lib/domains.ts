@@ -24,7 +24,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     defaultPeriodDays: 90,
     mediaType: 'photo',
     captureGuide: {
-      shots: [{ angle: 'front', guideType: 'body_silhouette' }],
+      shots: [{ angle: 'side', guideType: 'body_silhouette' }],
       lightingCheck: false,
     },
     accentColor: '#5B7FA6',
