@@ -118,7 +118,7 @@ export default function Home() {
           {goalReached ? (
             <PrimaryButton
               label="하이라이트 보러가기"
-              onPress={() => router.push('/highlight')}
+              onPress={() => router.push({ pathname: '/highlight', params: { cycleId: cycle.id } })}
             />
           ) : recordedToday ? (
             <View style={styles.completedBadge}>

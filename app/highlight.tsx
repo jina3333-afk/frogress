@@ -5,7 +5,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
-import { getCompletedCycleById, getCompletedCycles } from '../lib/storage';
+import { getCompletedCycleById } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -15,17 +15,23 @@ export default function Highlight() {
   const { cycleId, mode } = useLocalSearchParams<{ cycleId?: string; mode?: string }>();
   const isReplay = mode === 'replay';
   const [cycle, setCycle] = useState<CompletedCycle | null>(null);
-  const [frameIndex, setFrameIndex] = useState(0);
 
   useEffect(() => {
+    if (!cycleId) {
+      router.replace('/dashboard');
+      return;
+    }
     (async () => {
-      const found = cycleId
-        ? await getCompletedCycleById(cycleId)
-        : (await getCompletedCycles())[0] ?? null;
+      const found = await getCompletedCycleById(cycleId);
+      if (!found) {
+        router.replace('/dashboard');
+        return;
+      }
       setCycle(found);
     })();
   }, [cycleId]);
 
+  const [frameIndex, setFrameIndex] = useState(0);
   const frames = cycle?.entries ?? [];
 
   useEffect(() => {

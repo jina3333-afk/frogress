@@ -53,7 +53,7 @@ async function saveEntryAndNavigate(params: {
     const generator = new PhotoTimelapseGenerator();
     const highlight = await generator.generate(updatedCycle.entries);
     await completeActiveCycle(params.cycleId, highlight.ref);
-    router.replace('/highlight');
+    router.replace({ pathname: '/highlight', params: { cycleId: params.cycleId } });
   } else {
     router.replace({ pathname: '/home', params: { cycleId: params.cycleId } });
   }
