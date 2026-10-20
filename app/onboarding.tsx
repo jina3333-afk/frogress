@@ -1,8 +1,9 @@
-import { Check, Film, LucideIcon, Plus } from 'lucide-react-native';
+import { Check, ChevronLeft, Film, LucideIcon, Plus } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -25,6 +26,7 @@ import {
 } from '../lib/domains';
 import {
   getActiveCycleByDomain,
+  getActiveCycles,
   markOnboarded,
   saveCustomDomainIcon,
   startNewCycle,
@@ -48,6 +50,15 @@ export default function Onboarding() {
   );
   const [customPeriod, setCustomPeriod] = useState('');
   const [starting, setStarting] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
+
+  // 대시보드에 활성 사이클이 하나도 없으면(최초 온보딩 중) 돌아갈 대시보드 자체가 없으니
+  // 뒤로가기 버튼을 숨긴다.
+  useEffect(() => {
+    (async () => {
+      setCanGoBack((await getActiveCycles()).length > 0);
+    })();
+  }, []);
 
   const scrollRef = useRef<ScrollView>(null);
   const contentRef = useRef<View>(null);
@@ -73,6 +84,12 @@ export default function Onboarding() {
   }
 
   function selectDomain(value: Domain | 'custom') {
+    if (domain === 'custom' && value !== 'custom') {
+      // 커스텀 입력칸에 포커스가 있던 상태면 키보드가 피부/운동/보이스 카드를 가리거나
+      // 화면 밖으로 밀어낸 상태일 수 있다 — 전환이 눈에 보이도록 키보드를 닫고 맨 위로 스크롤한다.
+      Keyboard.dismiss();
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    }
     setDomain(value);
     if (value !== 'custom') {
       setPeriodDays(getDomainConfig(value).defaultPeriodDays);
@@ -117,6 +134,16 @@ export default function Onboarding() {
 
   return (
     <ScreenContainer>
+      {canGoBack && (
+        <Pressable
+          onPress={() => router.replace('/dashboard')}
+          style={styles.backButton}
+          accessibilityRole="button"
+          testID="onboarding-back"
+        >
+          <ChevronLeft size={20} color={colors.textMuted} strokeWidth={2.4} />
+        </Pressable>
+      )}
       <OnboardingDots step={step} />
       <KeyboardAvoidingView
         style={styles.keyboardAvoider}
@@ -350,6 +377,14 @@ function PeriodCard({
 }
 
 const styles = StyleSheet.create({
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
