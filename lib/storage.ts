@@ -9,6 +9,8 @@ const KEYS = {
   /** 이전 버전에서 쓰던 단일 사이클 키 — 마이그레이션 용도로만 읽는다. */
   legacyActiveCycle: 'frogress:activeCycle',
   completedCycles: 'frogress:completedCycles',
+  /** 커스텀 도메인 이름 → 선택한 아이콘 키. */
+  customDomainIcons: 'frogress:customDomainIcons',
 };
 
 // AsyncStorage 네이티브 모듈이 죽어있거나(버전 불일치), 디스크 I/O가 실패하는 등
@@ -176,6 +178,16 @@ export async function getEntryById(entryId: string): Promise<Entry | null> {
   return null;
 }
 
+export async function getCustomDomainIcons(): Promise<Record<string, string>> {
+  const map = await readJson<Record<string, string>>(KEYS.customDomainIcons);
+  return map ?? {};
+}
+
+export async function saveCustomDomainIcon(domain: string, iconKey: string): Promise<void> {
+  const map = await getCustomDomainIcons();
+  await writeJson(KEYS.customDomainIcons, { ...map, [domain]: iconKey });
+}
+
 export async function resetAll(): Promise<void> {
   try {
     await AsyncStorage.multiRemove([
@@ -183,6 +195,7 @@ export async function resetAll(): Promise<void> {
       KEYS.activeCycles,
       KEYS.legacyActiveCycle,
       KEYS.completedCycles,
+      KEYS.customDomainIcons,
     ]);
   } catch (error) {
     console.warn('[storage] resetAll failed', error);

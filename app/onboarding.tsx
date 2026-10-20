@@ -15,8 +15,20 @@ import {
 import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
-import { DOMAIN_CONFIGS, PERIOD_PRESETS, getDomainConfig } from '../lib/domains';
-import { getActiveCycleByDomain, markOnboarded, startNewCycle } from '../lib/storage';
+import {
+  CUSTOM_DOMAIN_ICON_OPTIONS,
+  DEFAULT_CUSTOM_DOMAIN_ICON_KEY,
+  DOMAIN_CONFIGS,
+  PERIOD_PRESETS,
+  getDomainConfig,
+  registerCustomDomainIcon,
+} from '../lib/domains';
+import {
+  getActiveCycleByDomain,
+  markOnboarded,
+  saveCustomDomainIcon,
+  startNewCycle,
+} from '../lib/storage';
 import { Domain } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -30,6 +42,7 @@ export default function Onboarding() {
   const [step, setStep] = useState<0 | 1>(lockedDomain ? 1 : 0);
   const [domain, setDomain] = useState<Domain | null>(lockedDomain ?? null);
   const [customDomain, setCustomDomain] = useState('');
+  const [customIconKey, setCustomIconKey] = useState(DEFAULT_CUSTOM_DOMAIN_ICON_KEY);
   const [periodDays, setPeriodDays] = useState<number | null>(
     lockedDomain ? getDomainConfig(lockedDomain).defaultPeriodDays : null
   );
@@ -68,6 +81,10 @@ export default function Onboarding() {
 
   async function proceedStart(targetDomain: Domain, targetPeriodDays: number) {
     setStarting(true);
+    if (domain === 'custom') {
+      registerCustomDomainIcon(targetDomain, customIconKey);
+      await saveCustomDomainIcon(targetDomain, customIconKey);
+    }
     await markOnboarded();
     const cycle = await startNewCycle(targetDomain, targetPeriodDays);
     setStarting(false);
@@ -154,6 +171,31 @@ export default function Onboarding() {
                       onChangeText={setCustomDomain}
                       onFocus={() => scrollInputIntoView(customDomainInputRef)}
                     />
+                  )}
+                  {domain === 'custom' && (
+                    <>
+                      <Text style={styles.iconGridLabel}>아이콘 선택</Text>
+                      <View style={styles.iconGrid}>
+                        {CUSTOM_DOMAIN_ICON_OPTIONS.map(({ key, icon: OptionIcon }) => {
+                          const selected = customIconKey === key;
+                          return (
+                            <Pressable
+                              key={key}
+                              onPress={() => setCustomIconKey(key)}
+                              accessibilityRole="button"
+                              testID={`icon-option-${key}`}
+                              style={[styles.iconOption, selected && styles.iconOptionSelected]}
+                            >
+                              <OptionIcon
+                                size={22}
+                                color={selected ? colors.surface : colors.textMuted}
+                                strokeWidth={2.2}
+                              />
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </>
                   )}
                 </View>
               )}
@@ -500,6 +542,32 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     fontSize: 16,
     backgroundColor: colors.surface,
+  },
+  iconGridLabel: {
+    fontFamily: fonts.bodySemiBold,
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  iconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  iconOption: {
+    width: 48,
+    height: 48,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconOptionSelected: {
+    borderColor: colors.ink,
+    backgroundColor: colors.ink,
   },
   customPeriodRow: {
     width: '100%',

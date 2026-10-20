@@ -6,8 +6,10 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { hydrateCustomDomainIcons } from '../lib/domains';
+import { getCustomDomainIcons } from '../lib/storage';
 import { colors } from '../theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -20,14 +22,24 @@ export default function RootLayout() {
     SUIT_700Bold: require('@sun-typeface/suit/fonts/static/otf/SUIT-Bold.otf'),
     SUIT_800ExtraBold: require('@sun-typeface/suit/fonts/static/otf/SUIT-ExtraBold.otf'),
   });
+  // getDomainConfig()는 화면 렌더링 중에 동기로 호출되므로, 커스텀 도메인이 저장해둔
+  // 아이콘 선택을 그 전에 메모리에 올려둬야 한다 — 폰트 로딩과 같은 방식으로 게이트한다.
+  const [iconsHydrated, setIconsHydrated] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    (async () => {
+      hydrateCustomDomainIcons(await getCustomDomainIcons());
+      setIconsHydrated(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && iconsHydrated) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, iconsHydrated]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !iconsHydrated) {
     return null;
   }
 
