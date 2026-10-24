@@ -7,7 +7,7 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { ThumbnailImage } from '../components/ThumbnailImage';
 import { lerpColor } from '../lib/color';
 import { getDomainConfig } from '../lib/domains';
-import { getActiveCycles, getCompletedCycles } from '../lib/storage';
+import { getActiveCycles, getCompletedCycles, visibleEntries } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -44,11 +44,16 @@ export default function Pond() {
           </View>
           <Text style={typography.title}>완성된 기록 {cycles.length}개</Text>
         </View>
-        {hasActive && (
-          <Text style={styles.backLink} onPress={() => router.replace('/dashboard')}>
-            홈으로
+        <View style={styles.headerLinks}>
+          {hasActive && (
+            <Text style={styles.backLink} onPress={() => router.replace('/dashboard')}>
+              홈으로
+            </Text>
+          )}
+          <Text style={styles.backLink} onPress={() => router.push('/trash')}>
+            최근 삭제
           </Text>
-        )}
+        </View>
       </View>
 
       {cycles.length === 0 ? (
@@ -77,7 +82,8 @@ export default function Pond() {
 function PondCard({ cycle }: { cycle: CompletedCycle }) {
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
-  const lastEntry = cycle.entries[cycle.entries.length - 1];
+  const entries = visibleEntries(cycle.entries);
+  const lastEntry = entries[entries.length - 1];
   // 영상/음성 파일은 <Image>로 디코딩할 수 없으니 사진은 원본을, 동영상은 생성된
   // 썸네일을 쓴다 — 그 외(음성, 썸네일 없는 동영상)는 ThumbnailImage의 아이콘으로 떨어진다.
   const coverUri =
@@ -144,6 +150,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 14,
     color: colors.textMuted,
+  },
+  headerLinks: {
+    alignItems: 'flex-end',
+    gap: 2,
   },
   backLink: {
     fontFamily: fonts.bodySemiBold,

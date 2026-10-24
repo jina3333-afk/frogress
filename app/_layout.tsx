@@ -61,6 +61,7 @@ export default function RootLayout() {
         <Stack.Screen name="highlight" />
         <Stack.Screen name="transition" />
         <Stack.Screen name="pond" />
+        <Stack.Screen name="trash" />
       </Stack>
     </SafeAreaProvider>
   );

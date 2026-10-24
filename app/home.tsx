@@ -14,7 +14,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { ThumbnailImage } from '../components/ThumbnailImage';
 import { getDomainConfig } from '../lib/domains';
-import { getActiveCycleById, hasEntryToday } from '../lib/storage';
+import { getActiveCycleById, hasEntryToday, visibleEntries } from '../lib/storage';
 import { ActiveCycle, Entry } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -69,12 +69,13 @@ export default function Home() {
 
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
-  const progress = Math.min(1, cycle.entries.length / cycle.periodDays);
-  const goalReached = cycle.entries.length >= cycle.periodDays;
-  const daysLeft = Math.max(0, cycle.periodDays - cycle.entries.length);
-  const recentEntries = [...cycle.entries].reverse().slice(0, 6);
+  const entries = visibleEntries(cycle.entries);
+  const progress = Math.min(1, entries.length / cycle.periodDays);
+  const goalReached = entries.length >= cycle.periodDays;
+  const daysLeft = Math.max(0, cycle.periodDays - entries.length);
+  const recentEntries = [...entries].reverse().slice(0, 6);
 
-  const streak = calculateStreak(cycle.entries);
+  const streak = calculateStreak(entries);
   const expectedCompletionDate = new Date(cycle.startDate);
   expectedCompletionDate.setDate(expectedCompletionDate.getDate() + cycle.periodDays);
 
@@ -98,7 +99,7 @@ export default function Home() {
             <Text style={styles.eyebrow}>{config.label} 기록</Text>
           </View>
           <Text style={typography.title}>
-            {cycle.entries.length}/{cycle.periodDays}일째
+            {entries.length}/{cycle.periodDays}일째
           </Text>
         </View>
 
@@ -182,7 +183,7 @@ export default function Home() {
         <Text style={styles.statsSectionTitle}>이번 사이클</Text>
         <View style={styles.statsCard}>
           <View style={styles.statTile}>
-            <Text style={styles.statValue}>{cycle.entries.length}</Text>
+            <Text style={styles.statValue}>{entries.length}</Text>
             <Text style={styles.statLabel}>기록한 날</Text>
           </View>
           <View style={styles.statDivider} />

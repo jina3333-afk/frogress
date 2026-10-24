@@ -1,6 +1,10 @@
 import {
   Book,
   Brain,
+  Calendar,
+  Camera,
+  Coffee,
+  Droplet,
   Dumbbell,
   Heart,
   Leaf,
@@ -9,6 +13,7 @@ import {
   Music,
   Palette,
   Pen,
+  Smile,
   Sparkles,
   Target,
   Utensils,
@@ -80,6 +85,11 @@ export const CUSTOM_DOMAIN_ICON_OPTIONS: IconOption[] = [
   { key: 'utensils', icon: Utensils },
   { key: 'leaf', icon: Leaf },
   { key: 'target', icon: Target },
+  { key: 'camera', icon: Camera },
+  { key: 'coffee', icon: Coffee },
+  { key: 'droplet', icon: Droplet },
+  { key: 'calendar', icon: Calendar },
+  { key: 'smile', icon: Smile },
 ];
 
 export const DEFAULT_CUSTOM_DOMAIN_ICON_KEY = 'sparkles';

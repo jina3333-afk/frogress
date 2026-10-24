@@ -7,7 +7,7 @@ import { VideoPreviewPlayer } from '../components/VideoPreviewPlayer';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
-import { getCompletedCycleById } from '../lib/storage';
+import { getCompletedCycleById, visibleEntries } from '../lib/storage';
 import { CompletedCycle, Entry } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -36,7 +36,7 @@ export default function Highlight() {
   }, [cycleId]);
 
   const [frameIndex, setFrameIndex] = useState(0);
-  const frames = cycle?.entries ?? [];
+  const frames = cycle ? visibleEntries(cycle.entries) : [];
 
   // 각 프레임(사진/동영상/음성)이 자기 타입에 맞는 시점에 직접 호출한다 —
   // 프레임이 1개뿐이면 (prev+1)%1이 그대로 0이라 상태가 안 바뀌어 자연히 멈춘다.
@@ -50,7 +50,7 @@ export default function Highlight() {
 
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
-  const currentEntry = cycle.entries[frameIndex];
+  const currentEntry = frames[frameIndex];
 
   return (
     <ScreenContainer>

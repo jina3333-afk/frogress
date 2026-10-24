@@ -6,7 +6,7 @@ import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
-import { getActiveCycles, hasOnboarded } from '../lib/storage';
+import { getActiveCycles, hasOnboarded, visibleEntries } from '../lib/storage';
 import { ActiveCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -73,8 +73,9 @@ export default function Dashboard() {
 function DomainCard({ cycle }: { cycle: ActiveCycle }) {
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
-  const progress = Math.min(1, cycle.entries.length / cycle.periodDays);
-  const recordedToday = cycle.entries.some(
+  const entries = visibleEntries(cycle.entries);
+  const progress = Math.min(1, entries.length / cycle.periodDays);
+  const recordedToday = entries.some(
     (e) => new Date(e.date).toDateString() === new Date().toDateString()
   );
 
@@ -90,7 +91,7 @@ function DomainCard({ cycle }: { cycle: ActiveCycle }) {
           <Text style={styles.cardLabel}>{config.label}</Text>
         </View>
         <Text style={styles.cardProgress}>
-          {cycle.entries.length}/{cycle.periodDays}일째
+          {entries.length}/{cycle.periodDays}일째
         </Text>
       </View>
       {recordedToday && <CircleCheck size={20} color={colors.accentDark} strokeWidth={2.2} />}

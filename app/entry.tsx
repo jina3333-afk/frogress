@@ -1,13 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { X } from 'lucide-react-native';
+import { Trash2, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AudioPreviewPlayer } from '../components/AudioPreviewPlayer';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { VideoPreviewPlayer } from '../components/VideoPreviewPlayer';
 import { getDomainConfig } from '../lib/domains';
-import { getEntryById } from '../lib/storage';
+import { archiveEntry, getEntryById } from '../lib/storage';
 import { Entry } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -43,12 +43,32 @@ export default function EntryViewer() {
     day: 'numeric',
   });
 
+  function handleDelete() {
+    if (!entry) return;
+    Alert.alert('이 기록을 삭제할까요?', '삭제해도 "최근 삭제"에서 다시 복구할 수 있어요.', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: async () => {
+          await archiveEntry(entry.id);
+          router.back();
+        },
+      },
+    ]);
+  }
+
   if (entry.mediaType === 'audio') {
     return (
       <ScreenContainer style={styles.audioContainer}>
-        <Pressable onPress={() => router.back()} style={styles.audioCloseButton}>
-          <X size={20} color={colors.textMuted} strokeWidth={2.2} />
-        </Pressable>
+        <View style={styles.audioTopRow}>
+          <Pressable onPress={() => router.back()} style={styles.audioCloseButton}>
+            <X size={20} color={colors.textMuted} strokeWidth={2.2} />
+          </Pressable>
+          <Pressable onPress={handleDelete} style={styles.audioCloseButton} testID="entry-delete">
+            <Trash2 size={18} color={colors.danger} strokeWidth={2.2} />
+          </Pressable>
+        </View>
         <View style={styles.audioBody}>
           <Text style={styles.entryLabel}>
             {config.label} · {dateLabel}
@@ -71,6 +91,9 @@ export default function EntryViewer() {
       )}
       <Pressable onPress={() => router.back()} style={styles.closeButton}>
         <X size={20} color="#fff" strokeWidth={2.4} />
+      </Pressable>
+      <Pressable onPress={handleDelete} style={styles.deleteButton} testID="entry-delete">
+        <Trash2 size={20} color="#fff" strokeWidth={2.4} />
       </Pressable>
       <View style={styles.dateBadge}>
         <Text style={styles.dateBadgeText}>
@@ -100,6 +123,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  deleteButton: {
+    position: 'absolute',
+    top: spacing.xl,
+    right: spacing.lg,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dateBadge: {
     position: 'absolute',
     bottom: spacing.xl,
@@ -112,6 +146,10 @@ const styles = StyleSheet.create({
   dateBadgeText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 13 },
   audioContainer: {
     flex: 1,
+  },
+  audioTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   audioCloseButton: {
     width: 36,

@@ -22,7 +22,12 @@ import { getDomainConfig } from '../lib/domains';
 import { formatDuration } from '../lib/format';
 import { PhotoTimelapseGenerator, alignEntryMedia } from '../lib/highlight';
 import { generateId } from '../lib/id';
-import { addEntryToActiveCycle, completeActiveCycle, getActiveCycleById } from '../lib/storage';
+import {
+  addEntryToActiveCycle,
+  completeActiveCycle,
+  getActiveCycleById,
+  visibleEntries,
+} from '../lib/storage';
 import { Entry, MediaType } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -48,10 +53,11 @@ async function saveEntryAndNavigate(params: {
   };
 
   const updatedCycle = await addEntryToActiveCycle(params.cycleId, entry);
+  const updatedVisibleEntries = updatedCycle ? visibleEntries(updatedCycle.entries) : [];
 
-  if (updatedCycle && updatedCycle.entries.length >= updatedCycle.periodDays) {
+  if (updatedCycle && updatedVisibleEntries.length >= updatedCycle.periodDays) {
     const generator = new PhotoTimelapseGenerator();
-    const highlight = await generator.generate(updatedCycle.entries);
+    const highlight = await generator.generate(updatedVisibleEntries);
     await completeActiveCycle(params.cycleId, highlight.ref);
     router.replace({ pathname: '/highlight', params: { cycleId: params.cycleId } });
   } else {
@@ -173,7 +179,8 @@ function PhotoVideoCapture({ domain, cycleId }: { domain: string; cycleId: strin
       // 분석 실패(네트워크 오류, API 키 미설정 등)는 analyzePhoto가 null로 삼켜서
       // 돌려준다 — 사진 저장 자체는 분석 성공 여부와 무관하게 항상 진행된다.
       const activeCycle = await getActiveCycleById(cycleId);
-      const metrics = (await analyzePhoto(photoUri, domain, activeCycle?.entries ?? [])) ?? {};
+      const previousEntries = activeCycle ? visibleEntries(activeCycle.entries) : [];
+      const metrics = (await analyzePhoto(photoUri, domain, previousEntries)) ?? {};
       await saveEntryAndNavigate({
         cycleId,
         domain,

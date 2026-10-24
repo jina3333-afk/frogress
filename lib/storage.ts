@@ -100,11 +100,16 @@ export async function startNewCycle(domain: Domain, periodDays: number): Promise
   return cycle;
 }
 
+/** 삭제(보관 처리)된 엔트리를 제외한 목록 — 진행률/통계/하이라이트 등 모든 소비처에서 써야 한다. */
+export function visibleEntries(entries: Entry[]): Entry[] {
+  return entries.filter((e) => !e.isArchived);
+}
+
 export async function hasEntryToday(cycleId: string): Promise<boolean> {
   const cycle = await getActiveCycleById(cycleId);
   if (!cycle) return false;
   const today = new Date().toDateString();
-  return cycle.entries.some((e) => new Date(e.date).toDateString() === today);
+  return visibleEntries(cycle.entries).some((e) => new Date(e.date).toDateString() === today);
 }
 
 export async function addEntryToActiveCycle(
@@ -122,7 +127,7 @@ export async function addEntryToActiveCycle(
 }
 
 export async function isCycleComplete(cycle: ActiveCycle): Promise<boolean> {
-  return cycle.entries.length >= cycle.periodDays;
+  return visibleEntries(cycle.entries).length >= cycle.periodDays;
 }
 
 export async function getCompletedCycles(): Promise<CompletedCycle[]> {
@@ -143,8 +148,9 @@ export async function completeActiveCycle(
     domain: cycle.domain,
     periodDays: cycle.periodDays,
     completedAt: new Date().toISOString(),
-    entryCount: cycle.entries.length,
+    entryCount: visibleEntries(cycle.entries).length,
     highlightVideoRef,
+    // 보관 처리된 엔트리도 포함해서 그대로 들고 간다 — 완료 후에도 "최근 삭제"에서 계속 복구할 수 있어야 한다.
     entries: cycle.entries,
   };
 
@@ -176,6 +182,67 @@ export async function getEntryById(entryId: string): Promise<Entry | null> {
     if (match) return match;
   }
   return null;
+}
+
+/** entryId를 활성/완료 사이클 전체에서 찾아 isArchived를 바꾸고 저장한다. */
+async function setEntryArchived(entryId: string, archived: boolean): Promise<void> {
+  function withUpdatedEntry<T extends { entries: Entry[] }>(cycle: T): { cycle: T; changed: boolean } {
+    const idx = cycle.entries.findIndex((e) => e.id === entryId);
+    if (idx === -1) return { cycle, changed: false };
+    const entries = [...cycle.entries];
+    entries[idx] = {
+      ...entries[idx],
+      isArchived: archived,
+      archivedAt: archived ? new Date().toISOString() : undefined,
+    };
+    return { cycle: { ...cycle, entries }, changed: true };
+  }
+
+  const activeList = await getActiveCycles();
+  let activeChanged = false;
+  const nextActive = activeList.map((cycle) => {
+    const result = withUpdatedEntry(cycle);
+    if (result.changed) activeChanged = true;
+    return result.cycle;
+  });
+  if (activeChanged) {
+    await writeJson(KEYS.activeCycles, nextActive);
+    return;
+  }
+
+  const completedList = await getCompletedCycles();
+  let completedChanged = false;
+  const nextCompleted = completedList.map((cycle) => {
+    const result = withUpdatedEntry(cycle);
+    if (result.changed) completedChanged = true;
+    return result.cycle;
+  });
+  if (completedChanged) {
+    await writeJson(KEYS.completedCycles, nextCompleted);
+  }
+}
+
+export async function archiveEntry(entryId: string): Promise<void> {
+  await setEntryArchived(entryId, true);
+}
+
+export async function unarchiveEntry(entryId: string): Promise<void> {
+  await setEntryArchived(entryId, false);
+}
+
+/** 삭제(보관 처리)된 엔트리를 최근 삭제된 순으로 전부 모아온다 ("최근 삭제" 화면용). */
+export async function getArchivedEntries(): Promise<Entry[]> {
+  const active = await getActiveCycles();
+  const completed = await getCompletedCycles();
+  const all: Entry[] = [];
+  for (const cycle of active) all.push(...cycle.entries);
+  for (const cycle of completed) all.push(...cycle.entries);
+  return all
+    .filter((e) => e.isArchived)
+    .sort(
+      (a, b) =>
+        new Date(b.archivedAt ?? b.date).getTime() - new Date(a.archivedAt ?? a.date).getTime()
+    );
 }
 
 export async function getCustomDomainIcons(): Promise<Record<string, string>> {

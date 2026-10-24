@@ -33,6 +33,10 @@ export interface Entry {
   thumbnailRef?: string;
   metrics: Record<string, number | string>;
   aiSummary?: string;
+  /** 소프트 삭제 — true면 진행률/통계/하이라이트 등 모든 곳에서 제외되고 "최근 삭제"에만 보인다. */
+  isArchived?: boolean;
+  /** 삭제(보관 처리)된 시각 — "최근 삭제" 목록 정렬용. */
+  archivedAt?: string;
 }
 
 export interface CompletedCycle {
