@@ -8,10 +8,13 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  ScrollViewInstance,
   StyleSheet,
   Text,
   TextInput,
+  TextInputInstance,
   View,
+  ViewInstance,
 } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -60,21 +63,21 @@ export default function Onboarding() {
     })();
   }, []);
 
-  const scrollRef = useRef<ScrollView>(null);
-  const contentRef = useRef<View>(null);
-  const customDomainInputRef = useRef<TextInput>(null);
-  const periodInputRef = useRef<TextInput>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const contentRef = useRef<ViewInstance>(null);
+  const customDomainInputRef = useRef<TextInputInstance>(null);
+  const periodInputRef = useRef<TextInputInstance>(null);
 
   const resolvedDomain = domain === 'custom' ? customDomain.trim() : domain;
 
   // KeyboardAvoidingView만으로는 포커스된 입력칸이 키보드에 가려지는 걸 막지 못해서
   // (특히 contentContainerStyle이 justifyContent: 'center'였을 때 전혀 동작하지 않았다),
   // 포커스 시 해당 입력칸까지 직접 스크롤시킨다.
-  function scrollInputIntoView(inputRef: React.RefObject<TextInput | null>) {
+  function scrollInputIntoView(inputRef: React.RefObject<TextInputInstance | null>) {
     requestAnimationFrame(() => {
       if (!inputRef.current || !contentRef.current) return;
       inputRef.current.measureLayout(
-        contentRef.current as unknown as React.ComponentRef<typeof View>,
+        contentRef.current,
         (_x: number, y: number) => {
           scrollRef.current?.scrollTo({ y: Math.max(y - 140, 0), animated: true });
         },
