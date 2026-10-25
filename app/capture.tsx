@@ -76,7 +76,7 @@ export default function Capture() {
         return;
       }
       const cycle = await getActiveCycleById(cycleId);
-      if (!cycle || cycle.isArchived) {
+      if (!cycle || cycle.isPaused) {
         router.replace('/dashboard');
         return;
       }

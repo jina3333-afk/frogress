@@ -6,7 +6,7 @@ import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
-import { archiveCycle, getActiveCycles, hasOnboarded, visibleCycles, visibleEntries } from '../lib/storage';
+import { pauseCycle, getActiveCycles, hasOnboarded, visibleCycles, visibleEntries } from '../lib/storage';
 import { ActiveCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -39,7 +39,7 @@ export default function Dashboard() {
     }, [])
   );
 
-  function handleArchived(cycleId: string) {
+  function handlePaused(cycleId: string) {
     setCycles((prev) => {
       const next = prev.filter((c) => c.id !== cycleId);
       if (next.length === 0) {
@@ -66,7 +66,7 @@ export default function Dashboard() {
 
         <View style={styles.cardList}>
           {cycles.map((cycle) => (
-            <DomainCard key={cycle.id} cycle={cycle} onArchived={handleArchived} />
+            <DomainCard key={cycle.id} cycle={cycle} onPaused={handlePaused} />
           ))}
         </View>
 
@@ -82,10 +82,10 @@ export default function Dashboard() {
 
 function DomainCard({
   cycle,
-  onArchived,
+  onPaused,
 }: {
   cycle: ActiveCycle;
-  onArchived: (cycleId: string) => void;
+  onPaused: (cycleId: string) => void;
 }) {
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
@@ -97,23 +97,23 @@ function DomainCard({
 
   function handleLongPress() {
     Alert.alert(config.label, undefined, [
-      { text: '도메인 보관하기', style: 'destructive', onPress: confirmArchive },
+      { text: '도메인 잠시 멈추기', style: 'destructive', onPress: confirmPause },
       { text: '취소', style: 'cancel' },
     ]);
   }
 
-  function confirmArchive() {
+  function confirmPause() {
     Alert.alert(
-      '이 도메인을 보관할까요?',
-      '나중에 이어서 하거나 다시 시작할 수 있어요.',
+      '이 도메인을 잠시 멈출까요?',
+      "연못 화면의 '잠시 멈춘 도메인'에서 언제든 이어서 하거나 다시 시작할 수 있어요.",
       [
         { text: '취소', style: 'cancel' },
         {
-          text: '보관하기',
+          text: '멈추기',
           style: 'destructive',
           onPress: async () => {
-            await archiveCycle(cycle.id);
-            onArchived(cycle.id);
+            await pauseCycle(cycle.id);
+            onPaused(cycle.id);
           },
         },
       ]

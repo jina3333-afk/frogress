@@ -1,14 +1,23 @@
 import { router, useFocusEffect } from 'expo-router';
-import { ChevronLeft, Mic, Video as VideoIcon, Waves } from 'lucide-react-native';
+import { ChevronLeft, Mic, PauseCircle, Video as VideoIcon, Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
+import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { ThumbnailImage } from '../components/ThumbnailImage';
 import { lerpColor } from '../lib/color';
 import { getDomainConfig } from '../lib/domains';
-import { getActiveCycles, getCompletedCycles, visibleCycles, visibleEntries } from '../lib/storage';
-import { CompletedCycle } from '../lib/types';
+import {
+  getActiveCycles,
+  getCompletedCycles,
+  getPausedCycles,
+  resumeCycle,
+  startNewCycle,
+  visibleCycles,
+  visibleEntries,
+} from '../lib/storage';
+import { ActiveCycle, CompletedCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
 // 카드가 아직 몇 장 없을 때, 그리드 끝에 "다음 개구리를 기다리는 중" 빈 슬롯을 보여주는 기준.
@@ -18,16 +27,38 @@ type PondListItem = { kind: 'cycle'; cycle: CompletedCycle } | { kind: 'placehol
 
 export default function Pond() {
   const [cycles, setCycles] = useState<CompletedCycle[]>([]);
+  const [pausedCycles, setPausedCycles] = useState<ActiveCycle[]>([]);
   const [hasActive, setHasActive] = useState(false);
+  const [selectedPaused, setSelectedPaused] = useState<ActiveCycle | null>(null);
+  const [resuming, setResuming] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
         setCycles(await getCompletedCycles());
+        setPausedCycles(await getPausedCycles());
         setHasActive(visibleCycles(await getActiveCycles()).length > 0);
       })();
     }, [])
   );
+
+  async function handleResume() {
+    if (!selectedPaused) return;
+    setResuming(true);
+    await resumeCycle(selectedPaused.id);
+    setResuming(false);
+    setSelectedPaused(null);
+    router.replace('/dashboard');
+  }
+
+  async function handleRestartFresh() {
+    if (!selectedPaused) return;
+    setResuming(true);
+    await startNewCycle(selectedPaused.domain, selectedPaused.periodDays);
+    setResuming(false);
+    setSelectedPaused(null);
+    router.replace('/dashboard');
+  }
 
   const items: PondListItem[] = cycles.map((cycle) => ({ kind: 'cycle', cycle }));
   if (cycles.length > 0 && cycles.length < EMPTY_SLOT_THRESHOLD) {
@@ -59,6 +90,24 @@ export default function Pond() {
         </Text>
       </View>
 
+      {pausedCycles.length > 0 && (
+        <View style={styles.pausedSection}>
+          <View style={styles.pausedHeaderRow}>
+            <PauseCircle size={14} color={colors.textMuted} strokeWidth={2.4} />
+            <Text style={styles.pausedSectionTitle}>잠시 멈춘 도메인 {pausedCycles.length}개</Text>
+          </View>
+          <View style={styles.pausedList}>
+            {pausedCycles.map((cycle) => (
+              <PausedDomainRow
+                key={cycle.id}
+                cycle={cycle}
+                onPress={() => setSelectedPaused(cycle)}
+              />
+            ))}
+          </View>
+        </View>
+      )}
+
       {cycles.length === 0 ? (
         <View style={styles.empty}>
           <FrogGrowth progress={1} size={64} />
@@ -78,7 +127,62 @@ export default function Pond() {
           }
         />
       )}
+
+      <Modal
+        visible={!!selectedPaused}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedPaused(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setSelectedPaused(null)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            {selectedPaused && (
+              <>
+                <Text style={typography.heading}>{getDomainConfig(selectedPaused.domain).label}</Text>
+                <Text style={styles.modalSubtitle}>
+                  {visibleEntries(selectedPaused.entries).length}/{selectedPaused.periodDays}일
+                  진행 중이었어요
+                </Text>
+                <View style={styles.modalActions}>
+                  <PrimaryButton label="이어서 하기" onPress={handleResume} loading={resuming} />
+                  <PrimaryButton
+                    label="처음부터 다시 시작"
+                    variant="secondary"
+                    onPress={handleRestartFresh}
+                    loading={resuming}
+                  />
+                  <PrimaryButton
+                    label="취소"
+                    variant="ghost"
+                    onPress={() => setSelectedPaused(null)}
+                  />
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
+  );
+}
+
+function PausedDomainRow({ cycle, onPress }: { cycle: ActiveCycle; onPress: () => void }) {
+  const config = getDomainConfig(cycle.domain);
+  const Icon = config.icon;
+  const entries = visibleEntries(cycle.entries);
+
+  return (
+    <Pressable style={styles.pausedRow} onPress={onPress} testID={`paused-cycle-${cycle.id}`}>
+      <View style={styles.pausedIconWrap}>
+        <Icon size={18} color={colors.textMuted} strokeWidth={2.2} />
+      </View>
+      <View style={styles.pausedRowBody}>
+        <Text style={styles.pausedRowTitle}>{config.label}</Text>
+        <Text style={styles.pausedRowMeta}>
+          {entries.length}/{cycle.periodDays}일 진행 중이었어요
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -161,6 +265,80 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 14,
     color: colors.textMuted,
+  },
+  pausedSection: {
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  pausedHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pausedSectionTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  pausedList: {
+    gap: spacing.sm,
+  },
+  pausedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.sm,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  pausedIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pausedRowBody: {
+    flex: 1,
+    gap: 2,
+  },
+  pausedRowTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+    color: colors.text,
+  },
+  pausedRowMeta: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  modalSubtitle: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  modalActions: {
+    marginTop: spacing.sm,
+    gap: spacing.sm,
   },
   backLink: {
     fontFamily: fonts.bodySemiBold,
