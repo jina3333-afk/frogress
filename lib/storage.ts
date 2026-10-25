@@ -80,12 +80,21 @@ export async function getActiveCycleById(cycleId: string): Promise<ActiveCycle |
   return list.find((c) => c.id === cycleId) ?? null;
 }
 
-export async function getActiveCycleByDomain(domain: Domain): Promise<ActiveCycle | null> {
-  const list = await getActiveCycles();
-  return list.find((c) => c.domain === domain) ?? null;
+/** 보관된 사이클을 제외한 목록 — 대시보드 등 "활성" 목록에 쓴다. */
+export function visibleCycles(cycles: ActiveCycle[]): ActiveCycle[] {
+  return cycles.filter((c) => !c.isArchived);
 }
 
-/** 같은 도메인의 기존 활성 사이클이 있으면 교체하고, 없으면 추가한다. */
+export async function getActiveCycleByDomain(domain: Domain): Promise<ActiveCycle | null> {
+  const list = await getActiveCycles();
+  return list.find((c) => c.domain === domain && !c.isArchived) ?? null;
+}
+
+/**
+ * 같은 도메인의 기존 활성(보관되지 않은) 사이클이 있으면 교체하고, 없으면 추가한다.
+ * 보관된 사이클은 건드리지 않는다 — "처음부터 다시 시작"이 바로 이 함수를 재사용해서,
+ * 기존 보관된 기록은 그대로 둔 채 같은 도메인의 새 사이클을 나란히 만들 수 있게 한다.
+ */
 export async function startNewCycle(domain: Domain, periodDays: number): Promise<ActiveCycle> {
   const cycle: ActiveCycle = {
     id: generateId('cycle'),
@@ -95,9 +104,51 @@ export async function startNewCycle(domain: Domain, periodDays: number): Promise
     entries: [],
   };
   const list = await getActiveCycles();
-  const next = [...list.filter((c) => c.domain !== domain), cycle];
+  const next = [...list.filter((c) => c.domain !== domain || c.isArchived), cycle];
   await writeJson(KEYS.activeCycles, next);
   return cycle;
+}
+
+/** 도메인을 보관 처리한다 — entries는 그대로 두고 대시보드 활성 목록에서만 뺀다. */
+export async function archiveCycle(cycleId: string): Promise<void> {
+  const list = await getActiveCycles();
+  const next = list.map((c) =>
+    c.id === cycleId ? { ...c, isArchived: true, archivedAt: new Date().toISOString() } : c
+  );
+  await writeJson(KEYS.activeCycles, next);
+}
+
+/**
+ * 보관 해제 — 도메인당 활성 사이클은 최대 1개여야 하므로, 같은 도메인에 이미 다른
+ * 활성 사이클이 있으면(예: 보관해둔 사이 "처음부터 다시 시작"을 눌렀던 경우) 그것부터
+ * 보관 처리한 뒤 대상 사이클을 복귀시킨다.
+ */
+export async function unarchiveCycle(cycleId: string): Promise<void> {
+  const list = await getActiveCycles();
+  const target = list.find((c) => c.id === cycleId);
+  if (!target) return;
+  const next = list.map((c) => {
+    if (c.id === cycleId) {
+      return { ...c, isArchived: false, archivedAt: undefined };
+    }
+    if (c.domain === target.domain && !c.isArchived) {
+      return { ...c, isArchived: true, archivedAt: new Date().toISOString() };
+    }
+    return c;
+  });
+  await writeJson(KEYS.activeCycles, next);
+}
+
+/** 보관된 도메인(사이클)을 최근 보관된 순으로 모아온다 ("최근 삭제" 화면용). */
+export async function getArchivedCycles(): Promise<ActiveCycle[]> {
+  const list = await getActiveCycles();
+  return list
+    .filter((c) => c.isArchived)
+    .sort(
+      (a, b) =>
+        new Date(b.archivedAt ?? b.startDate).getTime() -
+        new Date(a.archivedAt ?? a.startDate).getTime()
+    );
 }
 
 /** 삭제(보관 처리)된 엔트리를 제외한 목록 — 진행률/통계/하이라이트 등 모든 소비처에서 써야 한다. */

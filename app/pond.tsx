@@ -7,7 +7,7 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { ThumbnailImage } from '../components/ThumbnailImage';
 import { lerpColor } from '../lib/color';
 import { getDomainConfig } from '../lib/domains';
-import { getActiveCycles, getCompletedCycles, visibleEntries } from '../lib/storage';
+import { getActiveCycles, getCompletedCycles, visibleCycles, visibleEntries } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -24,7 +24,7 @@ export default function Pond() {
     useCallback(() => {
       (async () => {
         setCycles(await getCompletedCycles());
-        setHasActive((await getActiveCycles()).length > 0);
+        setHasActive(visibleCycles(await getActiveCycles()).length > 0);
       })();
     }, [])
   );

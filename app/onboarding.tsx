@@ -33,6 +33,7 @@ import {
   markOnboarded,
   saveCustomDomainIcon,
   startNewCycle,
+  visibleCycles,
 } from '../lib/storage';
 import { Domain } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
@@ -59,7 +60,7 @@ export default function Onboarding() {
   // 뒤로가기 버튼을 숨긴다.
   useEffect(() => {
     (async () => {
-      setCanGoBack((await getActiveCycles()).length > 0);
+      setCanGoBack(visibleCycles(await getActiveCycles()).length > 0);
     })();
   }, []);
 

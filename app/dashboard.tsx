@@ -1,12 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
 import { CircleCheck, Plus, Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getDomainConfig } from '../lib/domains';
-import { getActiveCycles, hasOnboarded, visibleEntries } from '../lib/storage';
+import { archiveCycle, getActiveCycles, hasOnboarded, visibleCycles, visibleEntries } from '../lib/storage';
 import { ActiveCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -24,7 +24,7 @@ export default function Dashboard() {
           router.replace('/onboarding');
           return;
         }
-        const active = await getActiveCycles();
+        const active = visibleCycles(await getActiveCycles());
         if (!alive) return;
         if (active.length === 0) {
           router.replace('/onboarding');
@@ -38,6 +38,16 @@ export default function Dashboard() {
       };
     }, [])
   );
+
+  function handleArchived(cycleId: string) {
+    setCycles((prev) => {
+      const next = prev.filter((c) => c.id !== cycleId);
+      if (next.length === 0) {
+        router.replace('/onboarding');
+      }
+      return next;
+    });
+  }
 
   if (loading) {
     return <ScreenContainer />;
@@ -56,7 +66,7 @@ export default function Dashboard() {
 
         <View style={styles.cardList}>
           {cycles.map((cycle) => (
-            <DomainCard key={cycle.id} cycle={cycle} />
+            <DomainCard key={cycle.id} cycle={cycle} onArchived={handleArchived} />
           ))}
         </View>
 
@@ -70,7 +80,13 @@ export default function Dashboard() {
   );
 }
 
-function DomainCard({ cycle }: { cycle: ActiveCycle }) {
+function DomainCard({
+  cycle,
+  onArchived,
+}: {
+  cycle: ActiveCycle;
+  onArchived: (cycleId: string) => void;
+}) {
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
   const entries = visibleEntries(cycle.entries);
@@ -79,10 +95,37 @@ function DomainCard({ cycle }: { cycle: ActiveCycle }) {
     (e) => new Date(e.date).toDateString() === new Date().toDateString()
   );
 
+  function handleLongPress() {
+    Alert.alert(config.label, undefined, [
+      { text: '도메인 보관하기', style: 'destructive', onPress: confirmArchive },
+      { text: '취소', style: 'cancel' },
+    ]);
+  }
+
+  function confirmArchive() {
+    Alert.alert(
+      '이 도메인을 보관할까요?',
+      '나중에 이어서 하거나 다시 시작할 수 있어요.',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '보관하기',
+          style: 'destructive',
+          onPress: async () => {
+            await archiveCycle(cycle.id);
+            onArchived(cycle.id);
+          },
+        },
+      ]
+    );
+  }
+
   return (
     <Pressable
       style={styles.card}
       onPress={() => router.push({ pathname: '/home', params: { cycleId: cycle.id } })}
+      onLongPress={handleLongPress}
+      testID={`domain-card-${cycle.domain}`}
     >
       <FrogGrowth progress={progress} size={48} />
       <View style={styles.cardBody}>

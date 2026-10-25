@@ -49,7 +49,7 @@ export default function Home() {
         }
         const active = await getActiveCycleById(cycleId);
         if (!alive) return;
-        if (!active) {
+        if (!active || active.isArchived) {
           router.replace('/dashboard');
           return;
         }

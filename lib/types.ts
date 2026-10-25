@@ -59,6 +59,10 @@ export interface ActiveCycle {
   periodDays: number;
   startDate: string; // ISO
   entries: Entry[];
+  /** 보관됨 — true면 대시보드 활성 목록에서 빠지고 "최근 삭제"의 보관된 도메인에만 보인다. */
+  isArchived?: boolean;
+  /** 보관 처리된 시각 — "최근 삭제" 목록 정렬용. */
+  archivedAt?: string;
 }
 
 export type TransitionChoice = 'continue' | 'change_period' | 'new_domain';

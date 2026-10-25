@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
-import { getActiveCycles, hasOnboarded } from '../lib/storage';
+import { getActiveCycles, hasOnboarded, visibleCycles } from '../lib/storage';
 import { colors } from '../theme';
 
 export default function SplashRedirect() {
@@ -13,7 +13,7 @@ export default function SplashRedirect() {
         router.replace('/onboarding');
         return;
       }
-      const active = await getActiveCycles();
+      const active = visibleCycles(await getActiveCycles());
       router.replace(active.length > 0 ? '/dashboard' : '/onboarding');
     })();
   }, []);
