@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Mic, Video as VideoIcon, Waves } from 'lucide-react-native';
+import { ChevronLeft, Mic, Video as VideoIcon, Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
@@ -36,6 +36,16 @@ export default function Pond() {
 
   return (
     <ScreenContainer>
+      {hasActive && (
+        <Pressable
+          onPress={() => router.replace('/dashboard')}
+          style={styles.backButton}
+          accessibilityRole="button"
+          testID="pond-back"
+        >
+          <ChevronLeft size={20} color={colors.textMuted} strokeWidth={2.4} />
+        </Pressable>
+      )}
       <View style={styles.header}>
         <View>
           <View style={styles.eyebrowRow}>
@@ -44,16 +54,9 @@ export default function Pond() {
           </View>
           <Text style={typography.title}>완성된 기록 {cycles.length}개</Text>
         </View>
-        <View style={styles.headerLinks}>
-          {hasActive && (
-            <Text style={styles.backLink} onPress={() => router.replace('/dashboard')}>
-              홈으로
-            </Text>
-          )}
-          <Text style={styles.backLink} onPress={() => router.push('/trash')}>
-            최근 삭제
-          </Text>
-        </View>
+        <Text style={styles.backLink} onPress={() => router.push('/trash')}>
+          최근 삭제
+        </Text>
       </View>
 
       {cycles.length === 0 ? (
@@ -134,6 +137,14 @@ function PondEmptySlotCard() {
 }
 
 const styles = StyleSheet.create({
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -150,10 +161,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 14,
     color: colors.textMuted,
-  },
-  headerLinks: {
-    alignItems: 'flex-end',
-    gap: 2,
   },
   backLink: {
     fontFamily: fonts.bodySemiBold,
