@@ -8,13 +8,20 @@ import {
   Waves,
 } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
+import { PeriodPicker } from '../components/PeriodPicker';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { ThumbnailImage } from '../components/ThumbnailImage';
+import { completeCycleIfReady } from '../lib/cycles';
 import { getDomainConfig } from '../lib/domains';
-import { getActiveCycleById, hasEntryToday, visibleEntries } from '../lib/storage';
+import {
+  getActiveCycleById,
+  hasEntryToday,
+  updateCyclePeriod,
+  visibleEntries,
+} from '../lib/storage';
 import { ActiveCycle, Entry } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -38,6 +45,9 @@ export default function Home() {
   const [cycle, setCycle] = useState<ActiveCycle | null>(null);
   const [recordedToday, setRecordedToday] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editingPeriod, setEditingPeriod] = useState(false);
+  const [draftPeriod, setDraftPeriod] = useState<number | null>(null);
+  const [savingPeriod, setSavingPeriod] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -78,6 +88,33 @@ export default function Home() {
   const streak = calculateStreak(entries);
   const expectedCompletionDate = new Date(cycle.startDate);
   expectedCompletionDate.setDate(expectedCompletionDate.getDate() + cycle.periodDays);
+
+  function openPeriodEditor() {
+    if (!cycle) return;
+    setDraftPeriod(cycle.periodDays);
+    setEditingPeriod(true);
+  }
+
+  async function handleSavePeriod() {
+    if (!draftPeriod || !cycle) return;
+    setSavingPeriod(true);
+    await updateCyclePeriod(cycle.id, draftPeriod);
+    const completed = await completeCycleIfReady(cycle.id);
+    setSavingPeriod(false);
+    setEditingPeriod(false);
+
+    if (completed) {
+      router.replace({ pathname: '/highlight', params: { cycleId: cycle.id } });
+      return;
+    }
+
+    // 완료되지 않았으면 포커스 재진입을 기다리지 않고 바로 갱신해서 진행률/통계가 즉시 반영되게 한다.
+    const refreshed = await getActiveCycleById(cycle.id);
+    if (refreshed) {
+      setCycle(refreshed);
+      setRecordedToday(await hasEntryToday(cycle.id));
+    }
+  }
 
   return (
     <ScreenContainer>
@@ -202,7 +239,48 @@ export default function Home() {
             <Text style={styles.statLabel}>예상 완료일</Text>
           </View>
         </View>
+
+        <View style={styles.editPeriodButtonWrap}>
+          <PrimaryButton
+            label="기록 기간 수정하기"
+            variant="secondary"
+            onPress={openPeriodEditor}
+          />
+        </View>
       </ScrollView>
+
+      <Modal
+        visible={editingPeriod}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditingPeriod(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setEditingPeriod(false)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={typography.heading}>기록 기간 수정</Text>
+            <Text style={styles.modalSubtitle}>{config.label} 기록 기간을 바꿔요.</Text>
+            <PeriodPicker value={draftPeriod} onChange={setDraftPeriod} />
+            {draftPeriod !== null && draftPeriod <= entries.length && (
+              <Text style={styles.modalWarning}>
+                {draftPeriod}일로 설정하면 지금까지 기록한 {entries.length}일로 바로 완료돼요.
+              </Text>
+            )}
+            <View style={styles.modalActions}>
+              <PrimaryButton
+                label="저장하기"
+                onPress={handleSavePeriod}
+                disabled={!draftPeriod}
+                loading={savingPeriod}
+              />
+              <PrimaryButton
+                label="취소"
+                variant="ghost"
+                onPress={() => setEditingPeriod(false)}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -348,5 +426,39 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     backgroundColor: colors.border,
+  },
+  editPeriodButtonWrap: {
+    marginTop: spacing.lg,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  modalSubtitle: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  modalWarning: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: colors.danger,
+    marginTop: spacing.sm,
+  },
+  modalActions: {
+    marginTop: spacing.md,
+    gap: spacing.sm,
   },
 });

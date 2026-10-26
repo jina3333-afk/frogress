@@ -17,13 +17,13 @@ import {
   ViewInstance,
 } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
+import { PeriodPicker } from '../components/PeriodPicker';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import {
   CUSTOM_DOMAIN_ICON_OPTIONS,
   DEFAULT_CUSTOM_DOMAIN_ICON_KEY,
   DOMAIN_CONFIGS,
-  PERIOD_PRESETS,
   getDomainConfig,
   registerCustomDomainIcon,
 } from '../lib/domains';
@@ -52,7 +52,6 @@ export default function Onboarding() {
   const [periodDays, setPeriodDays] = useState<number | null>(
     lockedDomain ? getDomainConfig(lockedDomain).defaultPeriodDays : null
   );
-  const [customPeriod, setCustomPeriod] = useState('');
   const [starting, setStarting] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
 
@@ -232,36 +231,12 @@ export default function Onboarding() {
               )}
 
               {step === 1 && (
-                <View style={styles.grid}>
-                  {PERIOD_PRESETS.map((preset) => (
-                    <PeriodCard
-                      key={preset}
-                      days={preset}
-                      selected={periodDays === preset}
-                      onPress={() => {
-                        setPeriodDays(preset);
-                        setCustomPeriod('');
-                      }}
-                    />
-                  ))}
-                  <View style={styles.customPeriodRow}>
-                    <Text style={styles.body}>직접 입력</Text>
-                    <TextInput
-                      ref={periodInputRef}
-                      style={styles.periodInput}
-                      keyboardType="number-pad"
-                      placeholder="일"
-                      placeholderTextColor={colors.textMuted}
-                      value={customPeriod}
-                      onChangeText={(text) => {
-                        setCustomPeriod(text);
-                        const n = parseInt(text, 10);
-                        setPeriodDays(Number.isFinite(n) && n > 0 ? n : null);
-                      }}
-                      onFocus={() => scrollInputIntoView(periodInputRef)}
-                    />
-                  </View>
-                </View>
+                <PeriodPicker
+                  value={periodDays}
+                  onChange={setPeriodDays}
+                  inputRef={periodInputRef}
+                  onInputFocus={() => scrollInputIntoView(periodInputRef)}
+                />
               )}
 
               <View style={styles.mascot}>
@@ -356,30 +331,6 @@ function DomainCard({
   );
 }
 
-function PeriodCard({
-  days,
-  selected,
-  onPress,
-}: {
-  days: number;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.card, styles.periodCard, selected && styles.cardSelected]}
-    >
-      <Text style={[styles.cardLabel, selected && styles.cardLabelSelected]}>{`${days}일`}</Text>
-      {selected && (
-        <View style={styles.periodCheckBadge}>
-          <Check size={12} color={colors.surface} strokeWidth={3} />
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   backButton: {
     width: 36,
@@ -441,11 +392,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 15,
   },
-  body: {
-    fontFamily: fonts.body,
-    fontSize: 16,
-    color: colors.text,
-  },
   domainList: {
     gap: spacing.sm,
   },
@@ -499,49 +445,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  card: {
-    width: '31%',
-    aspectRatio: 1,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardLabel: {
-    fontFamily: fonts.bodySemiBold,
-    fontSize: 16,
-    color: colors.text,
-  },
-  cardLabelSelected: {
-    color: colors.text,
-  },
-  periodCard: {
-    width: '31%',
-    aspectRatio: 1.4,
-  },
-  periodCheckBadge: {
-    position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardSelected: {
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    backgroundColor: colors.surface2,
   },
   previewCard: {
     flexDirection: 'row',
@@ -607,27 +510,6 @@ const styles = StyleSheet.create({
   iconOptionSelected: {
     borderColor: colors.ink,
     backgroundColor: colors.ink,
-  },
-  customPeriodRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.sm,
-    padding: spacing.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-  },
-  periodInput: {
-    fontFamily: fonts.body,
-    borderBottomWidth: 1.5,
-    borderColor: colors.ink,
-    minWidth: 60,
-    textAlign: 'center',
-    fontSize: 16,
-    paddingVertical: spacing.xs,
   },
   footer: {
     paddingTop: spacing.lg,

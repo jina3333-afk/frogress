@@ -18,16 +18,12 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { VideoPreviewPlayer } from '../components/VideoPreviewPlayer';
 import { analyzePhoto } from '../lib/analysis';
+import { completeCycleIfReady } from '../lib/cycles';
 import { getDomainConfig } from '../lib/domains';
 import { formatDuration } from '../lib/format';
-import { PhotoTimelapseGenerator, alignEntryMedia } from '../lib/highlight';
+import { alignEntryMedia } from '../lib/highlight';
 import { generateId } from '../lib/id';
-import {
-  addEntryToActiveCycle,
-  completeActiveCycle,
-  getActiveCycleById,
-  visibleEntries,
-} from '../lib/storage';
+import { addEntryToActiveCycle, getActiveCycleById, visibleEntries } from '../lib/storage';
 import { Entry, MediaType } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -52,13 +48,10 @@ async function saveEntryAndNavigate(params: {
     metrics: params.metrics,
   };
 
-  const updatedCycle = await addEntryToActiveCycle(params.cycleId, entry);
-  const updatedVisibleEntries = updatedCycle ? visibleEntries(updatedCycle.entries) : [];
+  await addEntryToActiveCycle(params.cycleId, entry);
+  const completed = await completeCycleIfReady(params.cycleId);
 
-  if (updatedCycle && updatedVisibleEntries.length >= updatedCycle.periodDays) {
-    const generator = new PhotoTimelapseGenerator();
-    const highlight = await generator.generate(updatedVisibleEntries);
-    await completeActiveCycle(params.cycleId, highlight.ref);
+  if (completed) {
     router.replace({ pathname: '/highlight', params: { cycleId: params.cycleId } });
   } else {
     router.replace({ pathname: '/home', params: { cycleId: params.cycleId } });

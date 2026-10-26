@@ -177,6 +177,20 @@ export async function addEntryToActiveCycle(
   return updated;
 }
 
+export async function updateCyclePeriod(
+  cycleId: string,
+  periodDays: number
+): Promise<ActiveCycle | null> {
+  const list = await getActiveCycles();
+  const idx = list.findIndex((c) => c.id === cycleId);
+  if (idx === -1) return null;
+  const updated: ActiveCycle = { ...list[idx], periodDays };
+  const next = [...list];
+  next[idx] = updated;
+  await writeJson(KEYS.activeCycles, next);
+  return updated;
+}
+
 export async function isCycleComplete(cycle: ActiveCycle): Promise<boolean> {
   return visibleEntries(cycle.entries).length >= cycle.periodDays;
 }
