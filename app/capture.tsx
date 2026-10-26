@@ -1,6 +1,6 @@
 import { CameraMode, CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Lightbulb, Mic } from 'lucide-react-native';
+import { Lightbulb, Mic, SwitchCamera } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import {
@@ -101,7 +101,9 @@ function PhotoVideoCapture({ domain, cycleId }: { domain: string; cycleId: strin
 
   const config = getDomainConfig(domain);
   const guide = config.captureGuide.shots[0];
-  const facing: CameraType = guide.angle === 'front' ? 'front' : 'back';
+  // 도메인 기본 방향은 화면 진입 시 처음 보여줄 카메라를 정할 뿐 — 전환 버튼으로 세션 동안 언제든 바꿀 수 있고,
+  // 그 상태는 이 화면을 벗어나면 저장하지 않는다(다음 진입 시 다시 도메인 기본값으로 시작).
+  const [facing, setFacing] = useState<CameraType>(guide.angle === 'front' ? 'front' : 'back');
 
   useEffect(() => {
     if (!isRecordingVideo) return;
@@ -125,6 +127,10 @@ function PhotoVideoCapture({ domain, cycleId }: { domain: string; cycleId: strin
         <PrimaryButton label="취소" variant="ghost" onPress={() => router.back()} />
       </ScreenContainer>
     );
+  }
+
+  function toggleFacing() {
+    setFacing((prev) => (prev === 'front' ? 'back' : 'front'));
   }
 
   async function takePhoto() {
@@ -256,6 +262,16 @@ function PhotoVideoCapture({ domain, cycleId }: { domain: string; cycleId: strin
           <View style={styles.recordingDot} />
           <Text style={styles.recordingText}>{formatDuration(recordingMs)}</Text>
         </View>
+      )}
+      {!isRecordingVideo && (
+        <Pressable
+          onPress={toggleFacing}
+          style={styles.flipButton}
+          accessibilityRole="button"
+          testID="capture-flip-camera"
+        >
+          <SwitchCamera size={20} color="#fff" strokeWidth={2.2} />
+        </Pressable>
       )}
 
       <View style={styles.captureFooter}>
@@ -467,6 +483,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.danger,
   },
   recordingText: { fontFamily: fonts.bodyBold, color: '#fff', fontSize: 13 },
+  flipButton: {
+    position: 'absolute',
+    top: spacing.xl,
+    right: spacing.lg,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   captureFooter: {
     position: 'absolute',
     bottom: spacing.xl,

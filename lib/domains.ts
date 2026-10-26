@@ -116,7 +116,8 @@ export function registerCustomDomainIcon(domain: string, iconKey: string): void 
 export function getDomainConfig(domain: Domain): DomainConfig {
   const found = DOMAIN_CONFIGS.find((d) => d.domain === domain);
   if (found) return found;
-  // 커스텀 도메인: 기본값으로 사진 기반, face_oval 가이드 사용. 정해진 색이 없으니 중립 톤.
+  // 커스텀 도메인: 기본값으로 사진 기반. 책/식단처럼 본인 얼굴이 아닌 대상을 찍는
+  // 경우가 많을 걸로 보고 후면 카메라를 기본으로 한다 — 촬영 화면의 전환 버튼으로 언제든 바꿀 수 있다.
   return {
     domain,
     label: domain,
@@ -125,7 +126,7 @@ export function getDomainConfig(domain: Domain): DomainConfig {
     defaultPeriodDays: 30,
     mediaType: 'photo',
     captureGuide: {
-      shots: [{ angle: 'front', guideType: 'custom' }],
+      shots: [{ angle: 'side', guideType: 'custom' }],
       lightingCheck: false,
     },
     accentColor: colors.textMuted,
