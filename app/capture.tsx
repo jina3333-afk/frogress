@@ -263,17 +263,6 @@ function PhotoVideoCapture({ domain, cycleId }: { domain: string; cycleId: strin
           <Text style={styles.recordingText}>{formatDuration(recordingMs)}</Text>
         </View>
       )}
-      {!isRecordingVideo && (
-        <Pressable
-          onPress={toggleFacing}
-          style={styles.flipButton}
-          accessibilityRole="button"
-          testID="capture-flip-camera"
-        >
-          <SwitchCamera size={20} color="#fff" strokeWidth={2.2} />
-        </Pressable>
-      )}
-
       <View style={styles.captureFooter}>
         {!isRecordingVideo && (
           <View style={styles.modeToggle}>
@@ -325,7 +314,14 @@ function PhotoVideoCapture({ domain, cycleId }: { domain: string; cycleId: strin
               testID="capture-shutter"
             />
           </View>
-          <View style={styles.controlsSpacer} />
+          <Pressable
+            onPress={isRecordingVideo ? undefined : toggleFacing}
+            style={[styles.flipButton, isRecordingVideo && styles.flipButtonDisabled]}
+            accessibilityRole="button"
+            testID="capture-flip-camera"
+          >
+            <SwitchCamera size={22} color="#fff" strokeWidth={2.2} />
+          </Pressable>
         </View>
       </View>
     </View>
@@ -483,17 +479,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.danger,
   },
   recordingText: { fontFamily: fonts.bodyBold, color: '#fff', fontSize: 13 },
-  flipButton: {
-    position: 'absolute',
-    top: spacing.xl,
-    right: spacing.lg,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   captureFooter: {
     position: 'absolute',
     bottom: spacing.xl,
@@ -534,7 +519,12 @@ const styles = StyleSheet.create({
   },
   cancelText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 15, width: 60 },
   cancelTextDisabled: { opacity: 0.35 },
-  controlsSpacer: { width: 60 },
+  flipButton: {
+    width: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flipButtonDisabled: { opacity: 0.35 },
   shutterRing: {
     width: 76,
     height: 76,
