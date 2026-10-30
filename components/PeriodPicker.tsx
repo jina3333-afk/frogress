@@ -31,7 +31,9 @@ export function PeriodPicker({ value, onChange, inputRef, onInputFocus }: Props)
         />
       ))}
       <View style={styles.customPeriodRow}>
-        <Text style={styles.body}>직접 입력</Text>
+        <Text style={styles.body} numberOfLines={1}>
+          직접 입력
+        </Text>
         <TextInput
           ref={inputRef}
           style={styles.periodInput}
@@ -85,6 +87,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 16,
     color: colors.text,
+    flexShrink: 0,
   },
   card: {
     width: '31%',
@@ -142,7 +145,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     borderBottomWidth: 1.5,
     borderColor: colors.ink,
-    minWidth: 60,
+    width: 56,
+    flexGrow: 0,
+    flexShrink: 0,
     textAlign: 'center',
     fontSize: 16,
     paddingVertical: spacing.xs,
