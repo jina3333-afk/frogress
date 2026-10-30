@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Lightbulb, Mic, SwitchCamera } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   PermissionResponse,
   RecordingPresets,
@@ -90,6 +91,9 @@ export default function Capture() {
 }
 
 function PhotoVideoCapture({ domain, cycleId }: { domain: string; cycleId: string }) {
+  // 카메라 화면은 전체 화면을 꽉 채워야 해서 ScreenContainer(SafeAreaView)를 안 쓴다 —
+  // 그 위에 겹치는 상단 배너는 노치/상태바를 직접 피해야 한다.
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -252,13 +256,13 @@ function PhotoVideoCapture({ domain, cycleId }: { domain: string; cycleId: strin
       <CameraView ref={cameraRef} style={styles.fill} facing={facing} mode={captureMode} />
       <CaptureGuideOverlay guideType={guide.guideType} />
       {config.captureGuide.lightingCheck && !isRecordingVideo && (
-        <View style={styles.tipBanner}>
+        <View style={[styles.tipBanner, { top: insets.top + spacing.md }]}>
           <Lightbulb size={14} color="#fff" strokeWidth={2.2} />
           <Text style={styles.tipText}>밝은 곳에서 정면을 향해 촬영해주세요</Text>
         </View>
       )}
       {isRecordingVideo && (
-        <View style={styles.recordingBadge}>
+        <View style={[styles.recordingBadge, { top: insets.top + spacing.md }]}>
           <View style={styles.recordingDot} />
           <Text style={styles.recordingText}>{formatDuration(recordingMs)}</Text>
         </View>
@@ -449,7 +453,6 @@ const styles = StyleSheet.create({
   },
   tipBanner: {
     position: 'absolute',
-    top: spacing.xl,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
@@ -462,7 +465,6 @@ const styles = StyleSheet.create({
   tipText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 13 },
   recordingBadge: {
     position: 'absolute',
-    top: spacing.xl,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',

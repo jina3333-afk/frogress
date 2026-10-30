@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Trash2, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AudioPreviewPlayer } from '../components/AudioPreviewPlayer';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
@@ -15,6 +16,9 @@ export default function EntryViewer() {
   const { entryId } = useLocalSearchParams<{ entryId?: string }>();
   const [entry, setEntry] = useState<Entry | null>(null);
   const [loading, setLoading] = useState(true);
+  // 사진/동영상 뷰어는 전체 화면을 꽉 채워야 해서 ScreenContainer(SafeAreaView)를 안 쓴다 —
+  // 그 위에 겹치는 닫기/삭제 버튼은 노치/상태바를 직접 피해야 한다.
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     (async () => {
@@ -92,10 +96,17 @@ export default function EntryViewer() {
       ) : (
         <VideoPreviewPlayer uri={entry.rawMediaRef} style={styles.media} />
       )}
-      <Pressable onPress={() => router.back()} style={styles.closeButton}>
+      <Pressable
+        onPress={() => router.back()}
+        style={[styles.closeButton, { top: insets.top + spacing.sm }]}
+      >
         <X size={20} color="#fff" strokeWidth={2.4} />
       </Pressable>
-      <Pressable onPress={handleDelete} style={styles.deleteButton} testID="entry-delete">
+      <Pressable
+        onPress={handleDelete}
+        style={[styles.deleteButton, { top: insets.top + spacing.sm }]}
+        testID="entry-delete"
+      >
         <Trash2 size={20} color="#fff" strokeWidth={2.4} />
       </Pressable>
       <View style={styles.dateBadge}>
@@ -117,7 +128,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: spacing.xl,
     left: spacing.lg,
     width: 36,
     height: 36,
@@ -128,7 +138,6 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     position: 'absolute',
-    top: spacing.xl,
     right: spacing.lg,
     width: 36,
     height: 36,

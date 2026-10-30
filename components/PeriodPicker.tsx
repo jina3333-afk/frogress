@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
   card: {
     width: '31%',
     aspectRatio: 1,
+    paddingVertical: spacing.lg,
     borderRadius: radii.md,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -106,7 +107,8 @@ const styles = StyleSheet.create({
   },
   periodCard: {
     width: '31%',
-    aspectRatio: 1.4,
+    aspectRatio: undefined,
+    paddingVertical: spacing.xl,
   },
   periodCheckBadge: {
     position: 'absolute',
