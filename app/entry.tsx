@@ -45,14 +45,17 @@ export default function EntryViewer() {
 
   function handleDelete() {
     if (!entry) return;
+    const entryId = entry.id;
     Alert.alert('이 기록을 삭제할까요?', '삭제해도 "최근 삭제"에서 다시 복구할 수 있어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',
         style: 'destructive',
-        onPress: async () => {
-          await archiveEntry(entry.id);
+        onPress: () => {
+          // 저장 쓰기가 끝나길 기다렸다가 돌아가면, 그 사이 화면이 깨진 미리보기 상태로
+          // 멈춰 보일 수 있다 — 확인 즉시 돌아가고, 보관 처리는 백그라운드에서 끝낸다.
           router.back();
+          archiveEntry(entryId);
         },
       },
     ]);
