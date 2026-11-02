@@ -9,6 +9,7 @@ import {
   RecordingPresets,
   getRecordingPermissionsAsync,
   requestRecordingPermissionsAsync,
+  setAudioModeAsync,
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
@@ -350,6 +351,10 @@ function AudioCapture({ domain, cycleId }: { domain: string; cycleId: string }) 
   }
 
   async function startRecording() {
+    // iOS에서는 녹음을 허용하는 오디오 모드를 먼저 설정하지 않으면 record()가
+    // "Recording not allowed on iOS" 에러로 실패한다 — 재생 화면 등 다른 곳에서
+    // 오디오 모드가 바뀌었을 수 있으니 녹음 시작 직전마다 다시 설정해준다.
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
     await recorder.prepareToRecordAsync();
     recorder.record();
   }
