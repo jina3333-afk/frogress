@@ -51,12 +51,12 @@ export default function Transition() {
         {completedCycle && (
           <View style={styles.summaryCard}>
             <View style={styles.summaryThumbs}>
-              {recentThumbs.map((entry, i) => (
+              {recentThumbs.map((entry) => (
                 <ThumbnailImage
                   key={entry.id}
                   uri={entry.rawMediaRef}
                   iconSize={14}
-                  style={[styles.summaryThumb, i > 0 && styles.summaryThumbOverlap]}
+                  style={styles.summaryThumb}
                 />
               ))}
             </View>
@@ -134,16 +134,12 @@ const styles = StyleSheet.create({
   },
   summaryThumbs: {
     flexDirection: 'row',
+    gap: spacing.xs,
   },
   summaryThumb: {
     width: 40,
     height: 40,
     borderRadius: radii.sm,
-    borderWidth: 2,
-    borderColor: colors.surface2,
-  },
-  summaryThumbOverlap: {
-    marginLeft: -12,
   },
   summaryText: {
     flex: 1,
