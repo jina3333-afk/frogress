@@ -10,6 +10,7 @@ interface Props {
   variant?: 'primary' | 'secondary' | 'ghost';
   disabled?: boolean;
   loading?: boolean;
+  testID?: string;
 }
 
 export function PrimaryButton({
@@ -19,6 +20,7 @@ export function PrimaryButton({
   variant = 'primary',
   disabled,
   loading,
+  testID,
 }: Props) {
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
@@ -27,6 +29,7 @@ export function PrimaryButton({
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
+      testID={testID}
       style={({ pressed }) => [
         styles.base,
         isPrimary && styles.primary,

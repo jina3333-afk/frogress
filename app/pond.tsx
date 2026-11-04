@@ -1,14 +1,16 @@
 import { router, useFocusEffect } from 'expo-router';
 import { ChevronLeft, Mic, PauseCircle, Video as VideoIcon, Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
+import { PeriodPicker } from '../components/PeriodPicker';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { ThumbnailImage } from '../components/ThumbnailImage';
 import { lerpColor } from '../lib/color';
 import { getDomainConfig } from '../lib/domains';
 import {
+  getActiveCycleByDomain,
   getActiveCycles,
   getCompletedCycles,
   getPausedCycles,
@@ -17,7 +19,7 @@ import {
   visibleCycles,
   visibleEntries,
 } from '../lib/storage';
-import { ActiveCycle, CompletedCycle } from '../lib/types';
+import { ActiveCycle, CompletedCycle, Domain } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
 // 카드가 아직 몇 장 없을 때, 그리드 끝에 "다음 개구리를 기다리는 중" 빈 슬롯을 보여주는 기준.
@@ -31,6 +33,10 @@ export default function Pond() {
   const [hasActive, setHasActive] = useState(false);
   const [selectedPaused, setSelectedPaused] = useState<ActiveCycle | null>(null);
   const [resuming, setResuming] = useState(false);
+  const [actionCycle, setActionCycle] = useState<CompletedCycle | null>(null);
+  const [periodRestartCycle, setPeriodRestartCycle] = useState<CompletedCycle | null>(null);
+  const [restartDraftPeriod, setRestartDraftPeriod] = useState<number | null>(null);
+  const [restarting, setRestarting] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -57,6 +63,66 @@ export default function Pond() {
     await startNewCycle(selectedPaused.domain, selectedPaused.periodDays);
     setResuming(false);
     setSelectedPaused(null);
+    router.replace('/dashboard');
+  }
+
+  /** 해당 도메인에 지금 진행 중인(멈추지 않은) 활성 사이클이 있으면 막는다 — 사이클 중복 생성 방지. */
+  async function warnIfDomainBusy(domain: Domain): Promise<boolean> {
+    const existing = await getActiveCycleByDomain(domain);
+    if (existing) {
+      Alert.alert(
+        '이미 진행 중인 기록이 있어요',
+        `${getDomainConfig(domain).label} 기록이 지금 대시보드에서 진행 중이에요. 완료하거나 잠시 멈춘 뒤에 새로 시작할 수 있어요.`
+      );
+      return true;
+    }
+    return false;
+  }
+
+  function handleReplayFromMenu() {
+    if (!actionCycle) return;
+    const cycleId = actionCycle.id;
+    setActionCycle(null);
+    router.push({ pathname: '/highlight', params: { cycleId, mode: 'replay' } });
+  }
+
+  async function handleRestartSameFromMenu() {
+    if (!actionCycle) return;
+    const cycle = actionCycle;
+    if (await warnIfDomainBusy(cycle.domain)) {
+      setActionCycle(null);
+      return;
+    }
+    setRestarting(true);
+    await startNewCycle(cycle.domain, cycle.periodDays);
+    setRestarting(false);
+    setActionCycle(null);
+    router.replace('/dashboard');
+  }
+
+  async function handleOpenPeriodRestart() {
+    if (!actionCycle) return;
+    const cycle = actionCycle;
+    if (await warnIfDomainBusy(cycle.domain)) {
+      setActionCycle(null);
+      return;
+    }
+    setActionCycle(null);
+    setRestartDraftPeriod(cycle.periodDays);
+    setPeriodRestartCycle(cycle);
+  }
+
+  async function handleConfirmPeriodRestart() {
+    if (!periodRestartCycle || !restartDraftPeriod) return;
+    const cycle = periodRestartCycle;
+    if (await warnIfDomainBusy(cycle.domain)) {
+      setPeriodRestartCycle(null);
+      return;
+    }
+    setRestarting(true);
+    await startNewCycle(cycle.domain, restartDraftPeriod);
+    setRestarting(false);
+    setPeriodRestartCycle(null);
     router.replace('/dashboard');
   }
 
@@ -123,7 +189,11 @@ export default function Pond() {
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
           renderItem={({ item }) =>
-            item.kind === 'cycle' ? <PondCard cycle={item.cycle} /> : <PondEmptySlotCard />
+            item.kind === 'cycle' ? (
+              <PondCard cycle={item.cycle} onLongPress={() => setActionCycle(item.cycle)} />
+            ) : (
+              <PondEmptySlotCard />
+            )
           }
         />
       )}
@@ -162,6 +232,83 @@ export default function Pond() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <Modal
+        visible={!!actionCycle}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActionCycle(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setActionCycle(null)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            {actionCycle && (
+              <>
+                <Text style={typography.heading}>{getDomainConfig(actionCycle.domain).label}</Text>
+                <Text style={styles.modalSubtitle}>
+                  {actionCycle.periodDays}일 ·{' '}
+                  {new Date(actionCycle.completedAt).toLocaleDateString('ko-KR')} 완료
+                </Text>
+                <View style={styles.modalActions} testID="pond-card-action-menu">
+                  <PrimaryButton
+                    label="하이라이트 다시 보기"
+                    onPress={handleReplayFromMenu}
+                    testID="pond-action-replay"
+                  />
+                  <PrimaryButton
+                    label="같은 방식으로 다시 시작"
+                    variant="secondary"
+                    onPress={handleRestartSameFromMenu}
+                    loading={restarting}
+                    testID="pond-action-restart-same"
+                  />
+                  <PrimaryButton
+                    label="기간 바꿔서 다시 시작"
+                    variant="secondary"
+                    onPress={handleOpenPeriodRestart}
+                    testID="pond-action-restart-period"
+                  />
+                  <PrimaryButton label="취소" variant="ghost" onPress={() => setActionCycle(null)} />
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={!!periodRestartCycle}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPeriodRestartCycle(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setPeriodRestartCycle(null)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            {periodRestartCycle && (
+              <>
+                <Text style={typography.heading}>기간을 정해주세요</Text>
+                <Text style={styles.modalSubtitle}>
+                  {getDomainConfig(periodRestartCycle.domain).label}을(를) 어떤 기간으로 새로
+                  시작할까요?
+                </Text>
+                <PeriodPicker value={restartDraftPeriod} onChange={setRestartDraftPeriod} />
+                <View style={styles.modalActions}>
+                  <PrimaryButton
+                    label="다시 시작하기"
+                    onPress={handleConfirmPeriodRestart}
+                    disabled={!restartDraftPeriod}
+                    loading={restarting}
+                  />
+                  <PrimaryButton
+                    label="취소"
+                    variant="ghost"
+                    onPress={() => setPeriodRestartCycle(null)}
+                  />
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -186,7 +333,7 @@ function PausedDomainRow({ cycle, onPress }: { cycle: ActiveCycle; onPress: () =
   );
 }
 
-function PondCard({ cycle }: { cycle: CompletedCycle }) {
+function PondCard({ cycle, onLongPress }: { cycle: CompletedCycle; onLongPress: () => void }) {
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
   const entries = visibleEntries(cycle.entries);
@@ -208,6 +355,7 @@ function PondCard({ cycle }: { cycle: CompletedCycle }) {
       onPress={() =>
         router.push({ pathname: '/highlight', params: { cycleId: cycle.id, mode: 'replay' } })
       }
+      onLongPress={onLongPress}
       testID="pond-card"
     >
       <ThumbnailImage
