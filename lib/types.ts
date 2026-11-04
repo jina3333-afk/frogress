@@ -20,6 +20,8 @@ export interface DomainConfig {
   };
   /** 연못 카드 등에서 도메인을 구분하는 보조 색 — 브랜드 accent와는 별개의 좁은 범위용. */
   accentColor: string;
+  /** true면 연못/전환 화면의 커버 사진을 기본적으로 블러 처리한다. 설정 화면에서 도메인별로 바꿀 수 있다. */
+  isSensitive: boolean;
 }
 
 export interface Entry {

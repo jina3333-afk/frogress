@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { CircleCheck, Plus, Waves } from 'lucide-react-native';
+import { CircleCheck, Plus, Settings, Waves } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FrogGrowth } from '../components/FrogGrowth';
@@ -58,10 +58,20 @@ export default function Dashboard() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={typography.title}>나의 기록</Text>
-          <Pressable onPress={() => router.push('/pond')} style={styles.pondLink}>
-            <Waves size={16} color={colors.textMuted} strokeWidth={2.2} />
-            <Text style={styles.pondLinkText}>연못</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable onPress={() => router.push('/pond')} style={styles.pondLink}>
+              <Waves size={16} color={colors.textMuted} strokeWidth={2.2} />
+              <Text style={styles.pondLinkText}>연못</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/settings')}
+              style={styles.settingsButton}
+              accessibilityRole="button"
+              testID="dashboard-settings"
+            >
+              <Settings size={18} color={colors.textMuted} strokeWidth={2.2} />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.cardList}>
@@ -153,11 +163,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   pondLink: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingVertical: spacing.xs,
+  },
+  settingsButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pondLinkText: {
     fontFamily: fonts.bodySemiBold,

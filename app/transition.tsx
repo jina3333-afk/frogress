@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
-import { ThumbnailImage } from '../components/ThumbnailImage';
+import { SensitiveThumbnail } from '../components/SensitiveThumbnail';
 import { getDomainConfig } from '../lib/domains';
 import { getCompletedCycleById, startNewCycle } from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
@@ -18,6 +18,7 @@ export default function Transition() {
   }>();
   const [busy, setBusy] = useState(false);
   const [completedCycle, setCompletedCycle] = useState<CompletedCycle | null>(null);
+  const [thumbsRevealed, setThumbsRevealed] = useState(false);
   const config = getDomainConfig(domain);
 
   useEffect(() => {
@@ -38,70 +39,78 @@ export default function Transition() {
 
   return (
     <ScreenContainer>
-      <View style={styles.centerWrap}>
-        <View style={styles.eyebrowRow}>
-          <PartyPopper size={15} color={colors.textMuted} strokeWidth={2.4} />
-          <Text style={styles.eyebrow}>한 사이클 완주!</Text>
-        </View>
-        <Text style={typography.title}>다음엔 어떻게 할까요?</Text>
-        <Text style={styles.subtitle}>
-          {config.label} 기록이 연못에 저장됐어요. 계속 이어가볼까요?
-        </Text>
-
-        {completedCycle && (
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryThumbs}>
-              {recentThumbs.map((entry) => (
-                <ThumbnailImage
-                  key={entry.id}
-                  uri={entry.rawMediaRef}
-                  iconSize={14}
-                  style={styles.summaryThumb}
-                />
-              ))}
-            </View>
-            <Text style={styles.summaryText}>
-              기록한 날{' '}
-              <Text style={styles.summaryStrong}>
-                {completedCycle.entryCount}/{completedCycle.periodDays}일
-              </Text>
-            </Text>
+      <Pressable style={styles.fill} onPress={() => setThumbsRevealed(false)}>
+        <View style={styles.centerWrap}>
+          <View style={styles.eyebrowRow}>
+            <PartyPopper size={15} color={colors.textMuted} strokeWidth={2.4} />
+            <Text style={styles.eyebrow}>한 사이클 완주!</Text>
           </View>
-        )}
+          <Text style={typography.title}>다음엔 어떻게 할까요?</Text>
+          <Text style={styles.subtitle}>
+            {config.label} 기록이 연못에 저장됐어요. 계속 이어가볼까요?
+          </Text>
 
-        <View style={styles.options}>
-          <PrimaryButton
-            label="같은 방식으로 계속하기"
-            description={`${config.label} · ${periodDays}일`}
-            onPress={handleContinueSame}
-            loading={busy}
-          />
-          <PrimaryButton
-            label="기간 변경하기"
-            description={`${config.label} 기록은 유지하고 기간만 바꿔요`}
-            variant="secondary"
-            onPress={() =>
-              router.push({ pathname: '/onboarding', params: { mode: 'change_period', domain } })
-            }
-          />
-          <PrimaryButton
-            label="새 도메인 추가하기"
-            description="다른 영역을 새로 기록해봐요"
-            variant="secondary"
-            onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'new_domain' } })}
-          />
+          {completedCycle && (
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryThumbs}>
+                {recentThumbs.map((entry) => (
+                  <SensitiveThumbnail
+                    key={entry.id}
+                    uri={entry.rawMediaRef}
+                    iconSize={14}
+                    style={styles.summaryThumb}
+                    isSensitive={config.isSensitive}
+                    revealed={thumbsRevealed}
+                    onRevealPress={() => setThumbsRevealed(true)}
+                  />
+                ))}
+              </View>
+              <Text style={styles.summaryText}>
+                기록한 날{' '}
+                <Text style={styles.summaryStrong}>
+                  {completedCycle.entryCount}/{completedCycle.periodDays}일
+                </Text>
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.options}>
+            <PrimaryButton
+              label="같은 방식으로 계속하기"
+              description={`${config.label} · ${periodDays}일`}
+              onPress={handleContinueSame}
+              loading={busy}
+            />
+            <PrimaryButton
+              label="기간 변경하기"
+              description={`${config.label} 기록은 유지하고 기간만 바꿔요`}
+              variant="secondary"
+              onPress={() =>
+                router.push({ pathname: '/onboarding', params: { mode: 'change_period', domain } })
+              }
+            />
+            <PrimaryButton
+              label="새 도메인 추가하기"
+              description="다른 영역을 새로 기록해봐요"
+              variant="secondary"
+              onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'new_domain' } })}
+            />
+          </View>
+
+          <Pressable style={styles.pondLink} onPress={() => router.replace('/pond')}>
+            <Waves size={15} color={colors.pond} strokeWidth={2.2} />
+            <Text style={styles.pondLinkText}>연못에서 지금까지의 기록 보기</Text>
+          </Pressable>
         </View>
-
-        <Pressable style={styles.pondLink} onPress={() => router.replace('/pond')}>
-          <Waves size={15} color={colors.pond} strokeWidth={2.2} />
-          <Text style={styles.pondLinkText}>연못에서 지금까지의 기록 보기</Text>
-        </Pressable>
-      </View>
+      </Pressable>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  fill: {
+    flex: 1,
+  },
   centerWrap: {
     flex: 1,
     justifyContent: 'center',

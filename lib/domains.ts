@@ -35,6 +35,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
       lightingCheck: true,
     },
     accentColor: '#C98368',
+    isSensitive: true,
   },
   {
     domain: 'exercise',
@@ -48,6 +49,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
       lightingCheck: false,
     },
     accentColor: '#5B7FA6',
+    isSensitive: false,
   },
   {
     domain: 'voice',
@@ -61,6 +63,7 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
       lightingCheck: false,
     },
     accentColor: '#8C6FA0',
+    isSensitive: false,
   },
 ];
 
@@ -113,12 +116,23 @@ export function registerCustomDomainIcon(domain: string, iconKey: string): void 
   customDomainIconKeys = { ...customDomainIconKeys, [domain]: iconKey };
 }
 
+// 도메인별 "민감한 기록" 표시 여부 — 기본값(skin만 true)을 설정 화면에서 사용자가 덮어쓸 수 있다.
+// 커스텀 도메인 아이콘과 같은 방식: 메모리 캐시에 보관하고 앱 시작 시 한 번 채워 넣는다.
+let domainSensitivityOverrides: Record<string, boolean> = {};
+
+export function hydrateDomainSensitivity(map: Record<string, boolean>): void {
+  domainSensitivityOverrides = { ...domainSensitivityOverrides, ...map };
+}
+
+export function registerDomainSensitivity(domain: string, isSensitive: boolean): void {
+  domainSensitivityOverrides = { ...domainSensitivityOverrides, [domain]: isSensitive };
+}
+
 export function getDomainConfig(domain: Domain): DomainConfig {
   const found = DOMAIN_CONFIGS.find((d) => d.domain === domain);
-  if (found) return found;
-  // 커스텀 도메인: 기본값으로 사진 기반. 책/식단처럼 본인 얼굴이 아닌 대상을 찍는
-  // 경우가 많을 걸로 보고 후면 카메라를 기본으로 한다 — 촬영 화면의 전환 버튼으로 언제든 바꿀 수 있다.
-  return {
+  const base: DomainConfig = found ?? {
+    // 커스텀 도메인: 기본값으로 사진 기반. 책/식단처럼 본인 얼굴이 아닌 대상을 찍는
+    // 경우가 많을 걸로 보고 후면 카메라를 기본으로 한다 — 촬영 화면의 전환 버튼으로 언제든 바꿀 수 있다.
     domain,
     label: domain,
     description: '나만의 기록',
@@ -130,5 +144,9 @@ export function getDomainConfig(domain: Domain): DomainConfig {
       lightingCheck: false,
     },
     accentColor: colors.textMuted,
+    isSensitive: false,
   };
+  const sensitivityOverride = domainSensitivityOverrides[domain];
+  if (sensitivityOverride === undefined) return base;
+  return { ...base, isSensitive: sensitivityOverride };
 }

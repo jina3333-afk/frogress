@@ -8,8 +8,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { hydrateCustomDomainIcons } from '../lib/domains';
-import { getCustomDomainIcons } from '../lib/storage';
+import { hydrateCustomDomainIcons, hydrateDomainSensitivity } from '../lib/domains';
+import { getCustomDomainIcons, getDomainSensitivityOverrides } from '../lib/storage';
 import { colors } from '../theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -29,6 +29,7 @@ export default function RootLayout() {
   useEffect(() => {
     (async () => {
       hydrateCustomDomainIcons(await getCustomDomainIcons());
+      hydrateDomainSensitivity(await getDomainSensitivityOverrides());
       setIconsHydrated(true);
     })();
   }, []);
@@ -62,6 +63,7 @@ export default function RootLayout() {
         <Stack.Screen name="transition" />
         <Stack.Screen name="pond" />
         <Stack.Screen name="trash" />
+        <Stack.Screen name="settings" />
       </Stack>
     </SafeAreaProvider>
   );

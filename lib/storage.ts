@@ -11,6 +11,8 @@ const KEYS = {
   completedCycles: 'frogress:completedCycles',
   /** 커스텀 도메인 이름 → 선택한 아이콘 키. */
   customDomainIcons: 'frogress:customDomainIcons',
+  /** 도메인 이름 → 민감한 기록 여부(사용자가 설정 화면에서 덮어쓴 값만 저장). */
+  domainSensitivity: 'frogress:domainSensitivity',
 };
 
 // AsyncStorage 네이티브 모듈이 죽어있거나(버전 불일치), 디스크 I/O가 실패하는 등
@@ -320,6 +322,16 @@ export async function saveCustomDomainIcon(domain: string, iconKey: string): Pro
   await writeJson(KEYS.customDomainIcons, { ...map, [domain]: iconKey });
 }
 
+export async function getDomainSensitivityOverrides(): Promise<Record<string, boolean>> {
+  const map = await readJson<Record<string, boolean>>(KEYS.domainSensitivity);
+  return map ?? {};
+}
+
+export async function setDomainSensitivity(domain: string, isSensitive: boolean): Promise<void> {
+  const map = await getDomainSensitivityOverrides();
+  await writeJson(KEYS.domainSensitivity, { ...map, [domain]: isSensitive });
+}
+
 export async function resetAll(): Promise<void> {
   try {
     await AsyncStorage.multiRemove([
@@ -328,6 +340,7 @@ export async function resetAll(): Promise<void> {
       KEYS.legacyActiveCycle,
       KEYS.completedCycles,
       KEYS.customDomainIcons,
+      KEYS.domainSensitivity,
     ]);
   } catch (error) {
     console.warn('[storage] resetAll failed', error);

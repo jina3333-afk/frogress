@@ -6,7 +6,7 @@ import { FrogGrowth } from '../components/FrogGrowth';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
-import { ThumbnailImage } from '../components/ThumbnailImage';
+import { SensitiveThumbnail } from '../components/SensitiveThumbnail';
 import { lerpColor } from '../lib/color';
 import { getDomainConfig } from '../lib/domains';
 import {
@@ -37,6 +37,7 @@ export default function Pond() {
   const [periodRestartCycle, setPeriodRestartCycle] = useState<CompletedCycle | null>(null);
   const [restartDraftPeriod, setRestartDraftPeriod] = useState<number | null>(null);
   const [restarting, setRestarting] = useState(false);
+  const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -45,6 +46,8 @@ export default function Pond() {
         setPausedCycles(await getPausedCycles());
         setHasActive(visibleCycles(await getActiveCycles()).length > 0);
       })();
+      // 화면을 벗어나면(포커스를 잃으면) 공개해둔 민감한 커버도 다시 블러 상태로 되돌린다.
+      return () => setRevealedCardId(null);
     }, [])
   );
 
@@ -133,70 +136,77 @@ export default function Pond() {
 
   return (
     <ScreenContainer>
-      {hasActive && (
-        <Pressable
-          onPress={() => router.replace('/dashboard')}
-          style={styles.backButton}
-          accessibilityRole="button"
-          testID="pond-back"
-        >
-          <ChevronLeft size={20} color={colors.textMuted} strokeWidth={2.4} />
-        </Pressable>
-      )}
-      <View style={styles.header}>
-        <View>
-          <View style={styles.eyebrowRow}>
-            <Waves size={15} color={colors.textMuted} strokeWidth={2.4} />
-            <Text style={styles.eyebrow}>나의 연못</Text>
+      <Pressable style={styles.fill} onPress={() => setRevealedCardId(null)}>
+        {hasActive && (
+          <Pressable
+            onPress={() => router.replace('/dashboard')}
+            style={styles.backButton}
+            accessibilityRole="button"
+            testID="pond-back"
+          >
+            <ChevronLeft size={20} color={colors.textMuted} strokeWidth={2.4} />
+          </Pressable>
+        )}
+        <View style={styles.header}>
+          <View>
+            <View style={styles.eyebrowRow}>
+              <Waves size={15} color={colors.textMuted} strokeWidth={2.4} />
+              <Text style={styles.eyebrow}>나의 연못</Text>
+            </View>
+            <Text style={typography.title}>완성된 기록 {cycles.length}개</Text>
           </View>
-          <Text style={typography.title}>완성된 기록 {cycles.length}개</Text>
-        </View>
-        <Text style={styles.backLink} onPress={() => router.push('/trash')}>
-          최근 삭제
-        </Text>
-      </View>
-
-      {pausedCycles.length > 0 && (
-        <View style={styles.pausedSection}>
-          <View style={styles.pausedHeaderRow}>
-            <PauseCircle size={14} color={colors.textMuted} strokeWidth={2.4} />
-            <Text style={styles.pausedSectionTitle}>잠시 멈춘 도메인 {pausedCycles.length}개</Text>
-          </View>
-          <View style={styles.pausedList}>
-            {pausedCycles.map((cycle) => (
-              <PausedDomainRow
-                key={cycle.id}
-                cycle={cycle}
-                onPress={() => setSelectedPaused(cycle)}
-              />
-            ))}
-          </View>
-        </View>
-      )}
-
-      {cycles.length === 0 ? (
-        <View style={styles.empty}>
-          <FrogGrowth progress={1} size={64} />
-          <Text style={styles.emptyText}>
-            아직 완성된 기록이 없어요.{'\n'}첫 사이클을 끝내면 여기 연못에 개구리가 나타나요.
+          <Text style={styles.backLink} onPress={() => router.push('/trash')}>
+            최근 삭제
           </Text>
         </View>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => (item.kind === 'cycle' ? item.cycle.id : 'placeholder')}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) =>
-            item.kind === 'cycle' ? (
-              <PondCard cycle={item.cycle} onLongPress={() => setActionCycle(item.cycle)} />
-            ) : (
-              <PondEmptySlotCard />
-            )
-          }
-        />
-      )}
+
+        {pausedCycles.length > 0 && (
+          <View style={styles.pausedSection}>
+            <View style={styles.pausedHeaderRow}>
+              <PauseCircle size={14} color={colors.textMuted} strokeWidth={2.4} />
+              <Text style={styles.pausedSectionTitle}>잠시 멈춘 도메인 {pausedCycles.length}개</Text>
+            </View>
+            <View style={styles.pausedList}>
+              {pausedCycles.map((cycle) => (
+                <PausedDomainRow
+                  key={cycle.id}
+                  cycle={cycle}
+                  onPress={() => setSelectedPaused(cycle)}
+                />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {cycles.length === 0 ? (
+          <View style={styles.empty}>
+            <FrogGrowth progress={1} size={64} />
+            <Text style={styles.emptyText}>
+              아직 완성된 기록이 없어요.{'\n'}첫 사이클을 끝내면 여기 연못에 개구리가 나타나요.
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={items}
+            keyExtractor={(item) => (item.kind === 'cycle' ? item.cycle.id : 'placeholder')}
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) =>
+              item.kind === 'cycle' ? (
+                <PondCard
+                  cycle={item.cycle}
+                  onLongPress={() => setActionCycle(item.cycle)}
+                  revealed={revealedCardId === item.cycle.id}
+                  onReveal={() => setRevealedCardId(item.cycle.id)}
+                />
+              ) : (
+                <PondEmptySlotCard />
+              )
+            }
+          />
+        )}
+      </Pressable>
 
       <Modal
         visible={!!selectedPaused}
@@ -333,7 +343,17 @@ function PausedDomainRow({ cycle, onPress }: { cycle: ActiveCycle; onPress: () =
   );
 }
 
-function PondCard({ cycle, onLongPress }: { cycle: CompletedCycle; onLongPress: () => void }) {
+function PondCard({
+  cycle,
+  onLongPress,
+  revealed,
+  onReveal,
+}: {
+  cycle: CompletedCycle;
+  onLongPress: () => void;
+  revealed: boolean;
+  onReveal: () => void;
+}) {
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
   const entries = visibleEntries(cycle.entries);
@@ -358,13 +378,18 @@ function PondCard({ cycle, onLongPress }: { cycle: CompletedCycle; onLongPress: 
       onLongPress={onLongPress}
       testID="pond-card"
     >
-      <ThumbnailImage
+      <SensitiveThumbnail
         uri={coverUri}
         style={styles.cardImage}
         iconSize={28}
         tintColor={coverTint}
         iconColor={config.accentColor}
         icon={lastEntry?.mediaType === 'audio' ? Mic : lastEntry?.mediaType === 'video' ? VideoIcon : undefined}
+        isSensitive={config.isSensitive}
+        revealed={revealed}
+        onRevealPress={onReveal}
+        onLongPress={onLongPress}
+        testID="pond-card-blur"
       />
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
@@ -389,6 +414,9 @@ function PondEmptySlotCard() {
 }
 
 const styles = StyleSheet.create({
+  fill: {
+    flex: 1,
+  },
   backButton: {
     width: 36,
     height: 36,
