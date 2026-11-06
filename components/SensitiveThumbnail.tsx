@@ -1,5 +1,5 @@
 import { BlurView } from 'expo-blur';
-import { EyeOff, LucideIcon } from 'lucide-react-native';
+import { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { ThumbnailImage } from './ThumbnailImage';
@@ -59,9 +59,9 @@ export function SensitiveThumbnail({
           onLongPress={onLongPress}
           testID={testID}
         >
-          <BlurView intensity={80} tint="default" style={styles.blur}>
-            <EyeOff size={(iconSize ?? 20) + 2} color="#fff" strokeWidth={2.2} />
-          </BlurView>
+          {/* intensity 80은 사진 색이 고르면(피부 클로즈업 등) 질감이 거의 안 남아 블러라기보단
+              단색 블록처럼 보였다 — 사진이 흐려 보이되 "흐려진 사진"이라는 티가 나는 선에서 낮춘다. */}
+          <BlurView intensity={40} tint="default" style={styles.blur} />
         </Pressable>
       )}
     </View>
@@ -78,7 +78,5 @@ const styles = StyleSheet.create({
   },
   blur: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
