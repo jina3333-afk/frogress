@@ -1,12 +1,19 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { PartyPopper, Waves } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { PeriodPicker } from '../components/PeriodPicker';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SensitiveThumbnail } from '../components/SensitiveThumbnail';
+import { completeCycleIfReady } from '../lib/cycles';
 import { getDomainConfig } from '../lib/domains';
-import { getCompletedCycleById, startNewCycle } from '../lib/storage';
+import {
+  getActiveCycleByDomain,
+  getCompletedCycleById,
+  reactivateCompletedCycle,
+  startNewCycle,
+} from '../lib/storage';
 import { CompletedCycle } from '../lib/types';
 import { colors, fonts, radii, spacing, typography } from '../theme';
 
@@ -19,6 +26,9 @@ export default function Transition() {
   const [busy, setBusy] = useState(false);
   const [completedCycle, setCompletedCycle] = useState<CompletedCycle | null>(null);
   const [thumbsRevealed, setThumbsRevealed] = useState(false);
+  const [periodModalOpen, setPeriodModalOpen] = useState(false);
+  const [draftPeriod, setDraftPeriod] = useState<number | null>(null);
+  const [changingPeriod, setChangingPeriod] = useState(false);
   const config = getDomainConfig(domain);
 
   useEffect(() => {
@@ -33,6 +43,38 @@ export default function Transition() {
     const cycle = await startNewCycle(domain, parseInt(periodDays, 10));
     setBusy(false);
     router.replace({ pathname: '/home', params: { cycleId: cycle.id } });
+  }
+
+  function openPeriodChange() {
+    if (!cycleId) return;
+    setDraftPeriod(parseInt(periodDays, 10));
+    setPeriodModalOpen(true);
+  }
+
+  // "기간 변경하기"는 방금 완료한 그 사이클을 entries 그대로 유지한 채 기간만 바꿔서
+  // 이어서 기록하는 것 — startNewCycle로 새 사이클을 만들면 방금 기록한 날들이
+  // (연못의 완료 기록으로는 남지만) 새 사이클에서는 사라진 것처럼 보이는 문제가 있었다.
+  async function handleConfirmPeriodChange() {
+    if (!cycleId || !draftPeriod) return;
+    const existing = await getActiveCycleByDomain(domain);
+    if (existing) {
+      setPeriodModalOpen(false);
+      Alert.alert(
+        '이미 진행 중인 기록이 있어요',
+        `${config.label} 기록이 지금 대시보드에서 진행 중이에요. 완료하거나 잠시 멈춘 뒤에 기간을 바꿀 수 있어요.`
+      );
+      return;
+    }
+    setChangingPeriod(true);
+    await reactivateCompletedCycle(cycleId, draftPeriod);
+    const completed = await completeCycleIfReady(cycleId);
+    setChangingPeriod(false);
+    setPeriodModalOpen(false);
+    if (completed) {
+      router.replace({ pathname: '/highlight', params: { cycleId } });
+    } else {
+      router.replace({ pathname: '/home', params: { cycleId } });
+    }
   }
 
   const recentThumbs = completedCycle ? [...completedCycle.entries].reverse().slice(0, 3) : [];
@@ -85,9 +127,7 @@ export default function Transition() {
               label="기간 변경하기"
               description={`${config.label} 기록은 유지하고 기간만 바꿔요`}
               variant="secondary"
-              onPress={() =>
-                router.push({ pathname: '/onboarding', params: { mode: 'change_period', domain } })
-              }
+              onPress={openPeriodChange}
             />
             <PrimaryButton
               label="새 도메인 추가하기"
@@ -103,6 +143,40 @@ export default function Transition() {
           </Pressable>
         </View>
       </Pressable>
+
+      <Modal
+        visible={periodModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPeriodModalOpen(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setPeriodModalOpen(false)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={typography.heading}>기간을 정해주세요</Text>
+            <Text style={styles.modalSubtitle}>{config.label}을(를) 며칠로 이어서 기록할까요?</Text>
+            <PeriodPicker value={draftPeriod} onChange={setDraftPeriod} />
+            {completedCycle && draftPeriod !== null && draftPeriod <= completedCycle.entryCount && (
+              <Text style={styles.modalWarning}>
+                {draftPeriod}일로 설정하면 지금까지 기록한 {completedCycle.entryCount}일로 바로 다시
+                완료돼요.
+              </Text>
+            )}
+            <View style={styles.modalActions}>
+              <PrimaryButton
+                label="기간 바꿔서 이어가기"
+                onPress={handleConfirmPeriodChange}
+                disabled={!draftPeriod}
+                loading={changingPeriod}
+              />
+              <PrimaryButton
+                label="취소"
+                variant="ghost"
+                onPress={() => setPeriodModalOpen(false)}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -110,6 +184,37 @@ export default function Transition() {
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  modalSubtitle: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  modalWarning: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: colors.danger,
+    marginTop: spacing.sm,
+  },
+  modalActions: {
+    marginTop: spacing.sm,
+    gap: spacing.sm,
   },
   centerWrap: {
     flex: 1,
