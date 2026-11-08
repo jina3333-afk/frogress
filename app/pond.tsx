@@ -8,12 +8,14 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SensitiveThumbnail } from '../components/SensitiveThumbnail';
 import { lerpColor } from '../lib/color';
+import { completeCycleIfReady } from '../lib/cycles';
 import { getDomainConfig } from '../lib/domains';
 import {
   getActiveCycleByDomain,
   getActiveCycles,
   getCompletedCycles,
   getPausedCycles,
+  reactivateCompletedCycle,
   resumeCycle,
   startNewCycle,
   visibleCycles,
@@ -32,6 +34,7 @@ export default function Pond() {
   const [resuming, setResuming] = useState(false);
   const [actionCycle, setActionCycle] = useState<CompletedCycle | null>(null);
   const [periodRestartCycle, setPeriodRestartCycle] = useState<CompletedCycle | null>(null);
+  const [periodModalMode, setPeriodModalMode] = useState<'restart' | 'continue'>('restart');
   const [restartDraftPeriod, setRestartDraftPeriod] = useState<number | null>(null);
   const [restarting, setRestarting] = useState(false);
   const [revealedCardId, setRevealedCardId] = useState<string | null>(null);
@@ -108,11 +111,26 @@ export default function Pond() {
       return;
     }
     setActionCycle(null);
+    setPeriodModalMode('restart');
     setRestartDraftPeriod(cycle.periodDays);
     setPeriodRestartCycle(cycle);
   }
 
-  async function handleConfirmPeriodRestart() {
+  /** "이어서 기록하기" — 완료된 사이클을 entries 그대로 활성 상태로 되돌리되, 새 목표 기간은 받아야 한다. */
+  async function handleOpenContinueFromMenu() {
+    if (!actionCycle) return;
+    const cycle = actionCycle;
+    if (await warnIfDomainBusy(cycle.domain)) {
+      setActionCycle(null);
+      return;
+    }
+    setActionCycle(null);
+    setPeriodModalMode('continue');
+    setRestartDraftPeriod(cycle.periodDays);
+    setPeriodRestartCycle(cycle);
+  }
+
+  async function handleConfirmPeriodModal() {
     if (!periodRestartCycle || !restartDraftPeriod) return;
     const cycle = periodRestartCycle;
     if (await warnIfDomainBusy(cycle.domain)) {
@@ -120,6 +138,18 @@ export default function Pond() {
       return;
     }
     setRestarting(true);
+    if (periodModalMode === 'continue') {
+      await reactivateCompletedCycle(cycle.id, restartDraftPeriod);
+      const completed = await completeCycleIfReady(cycle.id);
+      setRestarting(false);
+      setPeriodRestartCycle(null);
+      if (completed) {
+        router.replace({ pathname: '/highlight', params: { cycleId: cycle.id } });
+      } else {
+        router.replace('/dashboard');
+      }
+      return;
+    }
     await startNewCycle(cycle.domain, restartDraftPeriod);
     setRestarting(false);
     setPeriodRestartCycle(null);
@@ -255,6 +285,12 @@ export default function Pond() {
                     testID="pond-action-replay"
                   />
                   <PrimaryButton
+                    label="이어서 기록하기"
+                    variant="secondary"
+                    onPress={handleOpenContinueFromMenu}
+                    testID="pond-action-continue"
+                  />
+                  <PrimaryButton
                     label="같은 방식으로 다시 시작"
                     variant="secondary"
                     onPress={handleRestartSameFromMenu}
@@ -287,14 +323,23 @@ export default function Pond() {
               <>
                 <Text style={typography.heading}>기간을 정해주세요</Text>
                 <Text style={styles.modalSubtitle}>
-                  {getDomainConfig(periodRestartCycle.domain).label}을(를) 어떤 기간으로 새로
-                  시작할까요?
+                  {periodModalMode === 'continue'
+                    ? `${getDomainConfig(periodRestartCycle.domain).label}을(를) 며칠까지 이어서 기록할까요?`
+                    : `${getDomainConfig(periodRestartCycle.domain).label}을(를) 어떤 기간으로 새로 시작할까요?`}
                 </Text>
                 <PeriodPicker value={restartDraftPeriod} onChange={setRestartDraftPeriod} />
+                {periodModalMode === 'continue' &&
+                  restartDraftPeriod !== null &&
+                  restartDraftPeriod <= periodRestartCycle.entryCount && (
+                    <Text style={styles.modalWarning}>
+                      {restartDraftPeriod}일로 설정하면 지금까지 기록한 {periodRestartCycle.entryCount}
+                      일로 바로 다시 완료돼요.
+                    </Text>
+                  )}
                 <View style={styles.modalActions}>
                   <PrimaryButton
-                    label="다시 시작하기"
-                    onPress={handleConfirmPeriodRestart}
+                    label={periodModalMode === 'continue' ? '이어서 기록하기' : '다시 시작하기'}
+                    onPress={handleConfirmPeriodModal}
                     disabled={!restartDraftPeriod}
                     loading={restarting}
                   />
@@ -492,6 +537,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textMuted,
     marginBottom: spacing.sm,
+  },
+  modalWarning: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: colors.danger,
+    marginTop: spacing.sm,
   },
   modalActions: {
     marginTop: spacing.sm,

@@ -235,6 +235,43 @@ export async function getCompletedCycleById(id: string): Promise<CompletedCycle 
   return list.find((c) => c.id === id) ?? null;
 }
 
+/**
+ * 완료된 사이클을 다시 활성 상태로 되돌려서 이어서 기록할 수 있게 한다 — completeActiveCycle의
+ * 반대 방향. 기존 entries(진행 중 삭제했던 것까지 포함)와 id를 그대로 유지하고, periodDays만
+ * 새로 받은 값으로 바꾼다. startDate는 가장 이른 entry의 날짜로 복원해서(없으면 지금) 기록
+ * 기간 표시가 처음 기록한 날부터 이어지도록 한다. 같은 도메인의 기존 활성 사이클이 있으면
+ * (중복 방지는 호출부 책임) 덮어쓰지 않고 그대로 둔다 — startNewCycle과 달리 자동 교체하지 않는다.
+ */
+export async function reactivateCompletedCycle(
+  cycleId: string,
+  periodDays: number
+): Promise<ActiveCycle | null> {
+  const completedList = await getCompletedCycles();
+  const cycle = completedList.find((c) => c.id === cycleId);
+  if (!cycle) return null;
+
+  const earliestEntryDate = cycle.entries.reduce<string | null>(
+    (earliest, entry) => (earliest === null || entry.date < earliest ? entry.date : earliest),
+    null
+  );
+
+  const reactivated: ActiveCycle = {
+    id: cycle.id,
+    domain: cycle.domain,
+    periodDays,
+    startDate: earliestEntryDate ?? new Date().toISOString(),
+    entries: cycle.entries,
+  };
+
+  const activeList = await getActiveCycles();
+  await writeJson(KEYS.activeCycles, [...activeList, reactivated]);
+  await writeJson(
+    KEYS.completedCycles,
+    completedList.filter((c) => c.id !== cycleId)
+  );
+  return reactivated;
+}
+
 /** 진행 중/완료된 사이클을 통틀어 엔트리 id로 단일 기록을 찾는다 (최근 기록 상세보기용). */
 export async function getEntryById(entryId: string): Promise<Entry | null> {
   const active = await getActiveCycles();
