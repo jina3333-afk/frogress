@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Trash2, X } from 'lucide-react-native';
+import { Sparkles, Trash2, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,6 +46,15 @@ export default function EntryViewer() {
     month: 'long',
     day: 'numeric',
   });
+
+  // analyzePhoto가 채워주는 AI 분석 지표 — 사진 엔트리에만, 그것도 분석이 성공했을 때만 있다.
+  // observation이 없으면(분석 실패/미설정/영상·음성 엔트리) 분석 섹션 자체를 숨긴다.
+  const observation =
+    typeof entry.metrics.observation === 'string' ? entry.metrics.observation : undefined;
+  const puffiness = typeof entry.metrics.puffiness === 'number' ? entry.metrics.puffiness : undefined;
+  const toneEvenness =
+    typeof entry.metrics.toneEvenness === 'number' ? entry.metrics.toneEvenness : undefined;
+  const hasAnalysis = !!observation;
 
   function handleDelete() {
     if (!entry) return;
@@ -109,10 +118,31 @@ export default function EntryViewer() {
       >
         <Trash2 size={20} color="#fff" strokeWidth={2.4} />
       </Pressable>
-      <View style={styles.dateBadge}>
-        <Text style={styles.dateBadgeText}>
-          {config.label} · {dateLabel}
-        </Text>
+      <View style={[styles.bottomStack, { bottom: insets.bottom + spacing.lg }]}>
+        {hasAnalysis && (
+          <View style={styles.analysisCard} testID="entry-analysis">
+            <View style={styles.analysisHeaderRow}>
+              <Sparkles size={13} color="#fff" strokeWidth={2.4} />
+              <Text style={styles.analysisHeaderText}>AI 분석</Text>
+            </View>
+            {(puffiness !== undefined || toneEvenness !== undefined) && (
+              <View style={styles.analysisMetricsRow}>
+                {puffiness !== undefined && (
+                  <Text style={styles.analysisMetricText}>붓기 {puffiness}/5</Text>
+                )}
+                {toneEvenness !== undefined && (
+                  <Text style={styles.analysisMetricText}>톤 균일도 {toneEvenness}/5</Text>
+                )}
+              </View>
+            )}
+            <Text style={styles.analysisObservationText}>{observation}</Text>
+          </View>
+        )}
+        <View style={styles.dateBadge}>
+          <Text style={styles.dateBadgeText}>
+            {config.label} · {dateLabel}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -146,16 +176,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dateBadge: {
+  bottomStack: {
     position: 'absolute',
-    bottom: spacing.xl,
-    alignSelf: 'center',
+    left: spacing.lg,
+    right: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dateBadge: {
     backgroundColor: 'rgba(0,0,0,0.55)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radii.pill,
   },
   dateBadgeText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 13 },
+  analysisCard: {
+    width: '100%',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  analysisHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  analysisHeaderText: {
+    fontFamily: fonts.bodyBold,
+    color: '#fff',
+    fontSize: 12,
+  },
+  analysisMetricsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  analysisMetricText: {
+    fontFamily: fonts.bodySemiBold,
+    color: '#fff',
+    fontSize: 13,
+  },
+  analysisObservationText: {
+    fontFamily: fonts.body,
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    lineHeight: 19,
+  },
   audioContainer: {
     flex: 1,
   },
