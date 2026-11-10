@@ -35,10 +35,19 @@ export async function analyzePhoto(
   domain: Domain,
   previousEntries: Entry[]
 ): Promise<Record<string, number | string> | null> {
-  if (!API_BASE_URL) return null;
+  // 아래 각 실패 지점에 남기는 console.warn은 "왜 이번 기록에 AI 분석이 안 붙었는지"를
+  // Expo Go 로그에서 바로 확인할 수 있게 하기 위한 것 — 이 함수는 어떤 이유로든 절대
+  // throw하지 않고 null만 반환해야 한다는 계약은 그대로다.
+  if (!API_BASE_URL) {
+    console.warn('[analyzePhoto] EXPO_PUBLIC_API_BASE_URL이 설정되어 있지 않아 분석을 건너뜁니다.');
+    return null;
+  }
 
   const base64 = await readImageAsBase64(imageUri);
-  if (!base64) return null;
+  if (!base64) {
+    console.warn('[analyzePhoto] 사진을 base64로 읽지 못해 분석을 건너뜁니다.', imageUri);
+    return null;
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/analyze-photo`, {
@@ -51,12 +60,19 @@ export async function analyzePhoto(
         previousEntries,
       }),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.warn(`[analyzePhoto] 서버 응답 실패(status ${response.status}) — 분석 없이 진행합니다.`);
+      return null;
+    }
 
     const data = (await response.json()) as { metrics: Record<string, number | string> | null };
+    if (!data.metrics) {
+      console.warn('[analyzePhoto] 서버가 metrics: null을 반환했습니다 (미지원 도메인이거나 서버 쪽 분석 실패).');
+    }
     return data.metrics ?? null;
-  } catch {
+  } catch (error) {
     // 네트워크 오류, 서버 오류, 파싱 실패 등 — 호출부가 사진만 저장하도록 조용히 실패시킨다.
+    console.warn('[analyzePhoto] 네트워크/파싱 오류로 분석에 실패했습니다.', error);
     return null;
   }
 }
