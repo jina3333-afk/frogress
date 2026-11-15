@@ -1,7 +1,7 @@
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Mic } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { VideoPreviewPlayer } from '../components/VideoPreviewPlayer';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -14,6 +14,14 @@ import { colors, fonts, radii, spacing, typography } from '../theme';
 const PHOTO_FRAME_MS = 700;
 /** 동영상/음성 프레임이 재생 종료 전에 넘어가기까지 기다리는 최대 시간 — 하이라이트가 늘어지지 않도록 캡. */
 const MAX_MEDIA_FRAME_MS = 3000;
+/** 프레임 전환 크로스페이드 길이 — 다음 프레임이 이 시간 동안 투명도 0→1로 겹쳐 올라온다. */
+const CROSSFADE_MS = 350;
+/** "첫 기록 vs 마지막 기록" 비교 구간 — 다른 사진 프레임(700ms)의 약 2배. */
+const COMPARISON_FRAME_MS = 1500;
+
+type HighlightItem =
+  | { kind: 'entry'; entry: Entry }
+  | { kind: 'comparison'; first: Entry; last: Entry };
 
 export default function Highlight() {
   const { cycleId, mode } = useLocalSearchParams<{ cycleId?: string; mode?: string }>();
@@ -35,14 +43,64 @@ export default function Highlight() {
     })();
   }, [cycleId]);
 
-  const [frameIndex, setFrameIndex] = useState(0);
-  const frames = cycle ? visibleEntries(cycle.entries) : [];
+  const baseFrames = cycle ? visibleEntries(cycle.entries) : [];
 
-  // 각 프레임(사진/동영상/음성)이 자기 타입에 맞는 시점에 직접 호출한다 —
-  // 프레임이 1개뿐이면 (prev+1)%1이 그대로 0이라 상태가 안 바뀌어 자연히 멈춘다.
+  // 마지막 순서에 "첫 기록 vs 마지막 기록" 좌우 비교 구간을 추가한다 — 사진이 2장 이상이고
+  // 처음/마지막이 둘 다 사진일 때만(동영상·음성은 나란히 비교할 정지 이미지가 없다).
+  const items = useMemo<HighlightItem[]>(() => {
+    const entryItems: HighlightItem[] = baseFrames.map((entry) => ({ kind: 'entry', entry }));
+    const first = baseFrames[0];
+    const last = baseFrames[baseFrames.length - 1];
+    const showComparison =
+      baseFrames.length >= 2 &&
+      first.id !== last.id &&
+      first.mediaType === 'photo' &&
+      last.mediaType === 'photo';
+    if (showComparison) {
+      entryItems.push({ kind: 'comparison', first, last });
+    }
+    return entryItems;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cycle]);
+
+  const lastEntry = baseFrames[baseFrames.length - 1];
+  const lastObservation =
+    lastEntry && typeof lastEntry.metrics.observation === 'string'
+      ? lastEntry.metrics.observation
+      : undefined;
+
+  const [frameIndex, setFrameIndex] = useState(0);
+  // 전환 중에만 잠깐 존재하는 "직전 프레임" — 크로스페이드 동안 새 프레임 아래 그대로 깔아둔다.
+  const [prevIndex, setPrevIndex] = useState<number | null>(null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  // setFrameIndex의 함수형 업데이터 안에서 setPrevIndex/애니메이션 같은 부수효과를 직접
+  // 실행하면 "다른 컴포넌트를 렌더링하는 중에 상태 업데이트" 경고가 뜬다 — ref로 최신
+  // frameIndex를 들고 있다가, advance() 호출 시점(타이머 콜백, 렌더 중이 아님)에 한 번만
+  // 읽어서 모든 상태 변경을 평범한 값으로 내보낸다.
+  const frameIndexRef = useRef(0);
+  useEffect(() => {
+    frameIndexRef.current = frameIndex;
+  }, [frameIndex]);
+
   const advance = useCallback(() => {
-    setFrameIndex((prev) => (frames.length > 0 ? (prev + 1) % frames.length : 0));
-  }, [frames.length]);
+    if (items.length === 0) return;
+    const current = frameIndexRef.current;
+    const next = (current + 1) % items.length;
+    if (items.length > 1) {
+      setPrevIndex(current);
+      fadeAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: CROSSFADE_MS,
+        useNativeDriver: true,
+      }).start(() => {
+        // 그 사이 더 빠른 전환이 또 일어났다면 그쪽이 이미 prevIndex를 새로 갱신했을 수 있다 —
+        // 이번 애니메이션이 책임지던 값일 때만 지운다.
+        setPrevIndex((p) => (p === current ? null : p));
+      });
+    }
+    setFrameIndex(next);
+  }, [items.length, fadeAnim]);
 
   if (!cycle) {
     return <ScreenContainer />;
@@ -50,7 +108,8 @@ export default function Highlight() {
 
   const config = getDomainConfig(cycle.domain);
   const Icon = config.icon;
-  const currentEntry = frames[frameIndex];
+  const currentItem = items[frameIndex];
+  const previousItem = prevIndex !== null ? items[prevIndex] : null;
 
   return (
     <ScreenContainer>
@@ -63,28 +122,32 @@ export default function Highlight() {
       <Text style={typography.title}>{cycle.entryCount}일간의 변화</Text>
 
       <View style={styles.frameBox}>
-        {currentEntry &&
-          (currentEntry.mediaType === 'photo' ? (
-            <PhotoFrame key={currentEntry.id} entry={currentEntry} onAdvance={advance} />
-          ) : currentEntry.mediaType === 'video' ? (
-            <VideoFrame key={currentEntry.id} entry={currentEntry} onAdvance={advance} />
-          ) : (
-            <AudioFrame key={currentEntry.id} entry={currentEntry} onAdvance={advance} />
-          ))}
-        <View style={styles.dateBadge}>
-          <Text style={styles.dateBadgeText}>
-            {currentEntry
-              ? new Date(currentEntry.date).toLocaleDateString('ko-KR', {
-                  month: 'short',
-                  day: 'numeric',
-                })
-              : ''}
-          </Text>
-        </View>
+        {previousItem && (
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            {renderFrameContent(previousItem, NOOP, true, lastObservation, `prev-${prevIndex}`)}
+          </View>
+        )}
+        <Animated.View
+          style={[StyleSheet.absoluteFill, { opacity: items.length > 1 ? fadeAnim : 1 }]}
+        >
+          {currentItem &&
+            renderFrameContent(currentItem, advance, false, lastObservation, `cur-${frameIndex}`)}
+        </Animated.View>
+
+        {currentItem?.kind === 'entry' && (
+          <View style={styles.dateBadge}>
+            <Text style={styles.dateBadgeText}>
+              {new Date(currentItem.entry.date).toLocaleDateString('ko-KR', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.dots}>
-        {frames.map((_, i) => (
+        {items.map((_, i) => (
           <View key={i} style={[styles.dot, i === frameIndex && styles.dotActive]} />
         ))}
       </View>
@@ -112,23 +175,86 @@ export default function Highlight() {
   );
 }
 
-function PhotoFrame({ entry, onAdvance }: { entry: Entry; onAdvance: () => void }) {
+function NOOP() {}
+
+function renderFrameContent(
+  item: HighlightItem,
+  onAdvance: () => void,
+  frozen: boolean,
+  observation: string | undefined,
+  keyPrefix: string
+) {
+  if (item.kind === 'comparison') {
+    return (
+      <ComparisonFrame
+        key={keyPrefix}
+        first={item.first}
+        last={item.last}
+        onAdvance={onAdvance}
+        observation={observation}
+        frozen={frozen}
+      />
+    );
+  }
+  const entry = item.entry;
+  if (entry.mediaType === 'photo') {
+    return <PhotoFrame key={keyPrefix} entry={entry} onAdvance={onAdvance} frozen={frozen} />;
+  }
+  if (entry.mediaType === 'video') {
+    return <VideoFrame key={keyPrefix} entry={entry} onAdvance={onAdvance} frozen={frozen} />;
+  }
+  return <AudioFrame key={keyPrefix} entry={entry} onAdvance={onAdvance} frozen={frozen} />;
+}
+
+function PhotoFrame({
+  entry,
+  onAdvance,
+  frozen,
+}: {
+  entry: Entry;
+  onAdvance: () => void;
+  frozen?: boolean;
+}) {
+  // 켄 번즈(Ken Burns) 효과 — 사진이 떠 있는 동안 1.0배에서 1.08배로 아주 천천히 확대해서
+  // 정적인 느낌을 줄인다. frozen(크로스페이드 중 아래 깔리는 직전 프레임)이면 애니메이션
+  // 없이 확대가 끝난 상태(1.08)로 고정해서, 가려지는 와중에 줌이 리셋되는 게 안 보이게 한다.
+  const scale = useRef(new Animated.Value(frozen ? 1.08 : 1)).current;
+
   useEffect(() => {
+    if (frozen) return;
+    scale.setValue(1);
+    const zoom = Animated.timing(scale, {
+      toValue: 1.08,
+      duration: PHOTO_FRAME_MS + CROSSFADE_MS,
+      useNativeDriver: true,
+    });
+    zoom.start();
     const timer = setTimeout(onAdvance, PHOTO_FRAME_MS);
-    return () => clearTimeout(timer);
-    // entry가 바뀔 때만 새로 스케줄한다 — onAdvance는 frames.length에서만 바뀌는 안정적인 콜백.
+    return () => {
+      clearTimeout(timer);
+      zoom.stop();
+    };
+    // entry/frozen이 바뀔 때만 새로 스케줄한다 — onAdvance는 items.length에서만 바뀌는 안정적인 콜백.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entry.id]);
+  }, [entry.id, frozen]);
 
   return (
-    <Image
+    <Animated.Image
       source={{ uri: entry.processedMediaRef ?? entry.rawMediaRef }}
-      style={styles.frameImage}
+      style={[styles.frameImage, { transform: [{ scale }] }]}
     />
   );
 }
 
-function VideoFrame({ entry, onAdvance }: { entry: Entry; onAdvance: () => void }) {
+function VideoFrame({
+  entry,
+  onAdvance,
+  frozen,
+}: {
+  entry: Entry;
+  onAdvance: () => void;
+  frozen?: boolean;
+}) {
   const firedRef = useRef(false);
   const fireOnce = useCallback(() => {
     if (firedRef.current) return;
@@ -137,10 +263,11 @@ function VideoFrame({ entry, onAdvance }: { entry: Entry; onAdvance: () => void 
   }, [onAdvance]);
 
   useEffect(() => {
+    if (frozen) return;
     // 영상이 끝까지 재생되지 않아도(길이가 캡보다 길 때) 하이라이트가 늘어지지 않도록 캡을 둔다.
     const timer = setTimeout(fireOnce, MAX_MEDIA_FRAME_MS);
     return () => clearTimeout(timer);
-  }, [fireOnce]);
+  }, [fireOnce, frozen]);
 
   return (
     <VideoPreviewPlayer
@@ -148,12 +275,20 @@ function VideoFrame({ entry, onAdvance }: { entry: Entry; onAdvance: () => void 
       style={styles.frameImage}
       loop={false}
       nativeControls={false}
-      onEnd={fireOnce}
+      onEnd={frozen ? undefined : fireOnce}
     />
   );
 }
 
-function AudioFrame({ entry, onAdvance }: { entry: Entry; onAdvance: () => void }) {
+function AudioFrame({
+  entry,
+  onAdvance,
+  frozen,
+}: {
+  entry: Entry;
+  onAdvance: () => void;
+  frozen?: boolean;
+}) {
   const player = useAudioPlayer(entry.rawMediaRef);
   const status = useAudioPlayerStatus(player);
   const firedRef = useRef(false);
@@ -165,21 +300,77 @@ function AudioFrame({ entry, onAdvance }: { entry: Entry; onAdvance: () => void 
   }, [onAdvance]);
 
   useEffect(() => {
-    player.play();
-  }, [player]);
+    if (!frozen) player.play();
+  }, [player, frozen]);
 
   useEffect(() => {
+    if (frozen) return;
     const timer = setTimeout(fireOnce, MAX_MEDIA_FRAME_MS);
     return () => clearTimeout(timer);
-  }, [fireOnce]);
+  }, [fireOnce, frozen]);
 
   useEffect(() => {
-    if (status.didJustFinish) fireOnce();
-  }, [status.didJustFinish, fireOnce]);
+    if (!frozen && status.didJustFinish) fireOnce();
+  }, [status.didJustFinish, fireOnce, frozen]);
 
   return (
     <View style={styles.frameFallback}>
-      <PulsingMicIcon playing={status.playing} />
+      <PulsingMicIcon playing={!frozen && status.playing} />
+    </View>
+  );
+}
+
+/** "첫 기록 vs 마지막 기록" 좌우 비교 구간 — 하이라이트 마지막 순서, 1.5초 유지. */
+function ComparisonFrame({
+  first,
+  last,
+  onAdvance,
+  observation,
+  frozen,
+}: {
+  first: Entry;
+  last: Entry;
+  onAdvance: () => void;
+  observation?: string;
+  frozen?: boolean;
+}) {
+  useEffect(() => {
+    if (frozen) return;
+    const timer = setTimeout(onAdvance, COMPARISON_FRAME_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frozen]);
+
+  function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+  }
+
+  return (
+    <View style={styles.comparisonRow}>
+      <View style={styles.comparisonHalf}>
+        <Image
+          source={{ uri: first.processedMediaRef ?? first.rawMediaRef }}
+          style={styles.comparisonImage}
+        />
+        <View style={styles.comparisonLabelBadge}>
+          <Text style={styles.comparisonLabelText}>시작 · {formatDate(first.date)}</Text>
+        </View>
+      </View>
+      <View style={styles.comparisonDivider} />
+      <View style={styles.comparisonHalf}>
+        <Image
+          source={{ uri: last.processedMediaRef ?? last.rawMediaRef }}
+          style={styles.comparisonImage}
+        />
+        <View style={styles.comparisonLabelBadge}>
+          <Text style={styles.comparisonLabelText}>완료 · {formatDate(last.date)}</Text>
+        </View>
+      </View>
+      {observation && (
+        <View style={styles.observationCaption} testID="highlight-observation-caption">
+          <Text style={styles.observationCaptionText}>{observation}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -245,6 +436,48 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  comparisonRow: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  comparisonHalf: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  comparisonImage: {
+    width: '100%',
+    height: '100%',
+  },
+  comparisonDivider: {
+    width: 2,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+  },
+  comparisonLabelBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.pill,
+  },
+  comparisonLabelText: { fontFamily: fonts.bodySemiBold, color: '#fff', fontSize: 11 },
+  observationCaption: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  observationCaptionText: {
+    fontFamily: fonts.body,
+    color: '#fff',
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
   },
   dateBadge: {
     position: 'absolute',
