@@ -33,7 +33,7 @@ export interface Entry {
   processedMediaRef?: string; // 정렬/보정 후
   /** 동영상 엔트리의 썸네일 이미지 uri. 사진은 rawMediaRef 자체를 쓰므로 불필요. */
   thumbnailRef?: string;
-  metrics: Record<string, number | string>;
+  metrics: Record<string, number | string | LandmarkPoints>;
   aiSummary?: string;
   /** 소프트 삭제 — true면 진행률/통계/하이라이트 등 모든 곳에서 제외되고 "최근 삭제"에만 보인다. */
   isArchived?: boolean;
@@ -68,3 +68,21 @@ export interface ActiveCycle {
 }
 
 export type TransitionChoice = 'continue' | 'change_period' | 'new_domain';
+
+/** 0~1 비율 좌표 — 원본 사진 가로(x)/세로(y) 대비 위치. 해상도가 달라도 그대로 비교할 수 있다. */
+export interface LandmarkPoint {
+  x: number;
+  y: number;
+}
+
+/**
+ * 사진 정렬 보정의 기준이 되는 대응점 2개(피부: 양쪽 눈, 운동: 양쪽 어깨) — AI 분석 시
+ * Claude Vision이 추정해서 Entry.metrics.landmarkPoints로 저장된다. left/right는 사진을
+ * 보는 사람 기준이다.
+ */
+export interface LandmarkPoints {
+  left: LandmarkPoint;
+  right: LandmarkPoint;
+  /** 모델이 스스로 매긴 좌표 신뢰도 — 'low'면 정렬 보정에 쓰지 않는다. */
+  confidence: 'high' | 'medium' | 'low';
+}

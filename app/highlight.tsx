@@ -6,6 +6,7 @@ import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { VideoPreviewPlayer } from '../components/VideoPreviewPlayer';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { asLandmarkPoints, buildAlignmentTransform, computeSimilarityTransform } from '../lib/alignment';
 import { getDomainConfig } from '../lib/domains';
 import { getCompletedCycleById, visibleEntries } from '../lib/storage';
 import { CompletedCycle, Entry } from '../lib/types';
@@ -345,6 +346,14 @@ function ComparisonFrame({
     return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   }
 
+  // 첫 사진을 기준(reference)으로 두고, 마지막 사진을 거기 맞춰 보정한다. 좌표 추출이
+  // 실패했거나 신뢰도가 낮으면(또는 보정값이 비정상적으로 크면) null이 돌아오고, 이 경우
+  // 아래에서 last 사진은 원본 그대로(transform 없이) 보여준다 — 안전장치.
+  const firstLandmarks = asLandmarkPoints(first.metrics.landmarkPoints);
+  const lastLandmarks = asLandmarkPoints(last.metrics.landmarkPoints);
+  const transform = computeSimilarityTransform(firstLandmarks, lastLandmarks);
+  const [lastSize, setLastSize] = useState({ width: 0, height: 0 });
+
   return (
     <View style={styles.comparisonRow}>
       <View style={styles.comparisonHalf}>
@@ -357,10 +366,21 @@ function ComparisonFrame({
         </View>
       </View>
       <View style={styles.comparisonDivider} />
-      <View style={styles.comparisonHalf}>
+      <View
+        style={styles.comparisonHalf}
+        onLayout={(e) => {
+          const { width, height } = e.nativeEvent.layout;
+          setLastSize({ width, height });
+        }}
+      >
         <Image
           source={{ uri: last.processedMediaRef ?? last.rawMediaRef }}
-          style={styles.comparisonImage}
+          style={[
+            styles.comparisonImage,
+            transform && lastSize.width > 0
+              ? { transform: buildAlignmentTransform(transform, lastSize.width, lastSize.height) }
+              : null,
+          ]}
         />
         <View style={styles.comparisonLabelBadge}>
           <Text style={styles.comparisonLabelText}>완료 · {formatDate(last.date)}</Text>

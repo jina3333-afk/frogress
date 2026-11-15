@@ -37,7 +37,7 @@ async function saveEntryAndNavigate(params: {
   rawMediaRef: string;
   processedMediaRef?: string;
   thumbnailRef?: string;
-  metrics: Record<string, number | string>;
+  metrics: Entry['metrics'];
 }) {
   const entry: Entry = {
     id: generateId('entry'),

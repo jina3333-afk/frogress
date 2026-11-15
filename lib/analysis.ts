@@ -1,4 +1,5 @@
 import { File } from 'expo-file-system';
+import { Image } from 'react-native';
 import { Domain, Entry } from './types';
 
 /**
@@ -22,6 +23,22 @@ async function readImageAsBase64(uri: string): Promise<string | null> {
 }
 
 /**
+ * 사진 정렬 보정용 기준점(landmarkPoints) 좌표를 서버가 "원본 해상도 기준 픽셀"로 돌려주려면
+ * 원본 가로/세로를 알아야 한다 — expo-camera의 캡처 결과를 거치지 않고 uri만으로 구하기 위해
+ * RN 코어의 Image.getSize를 쓴다. 실패해도(알 수 없는 uri 형식 등) null만 반환하고, 이 경우
+ * 서버는 좌표 추정 자체를 건너뛴다(안전장치).
+ */
+function getImageSize(uri: string): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    Image.getSize(
+      uri,
+      (width, height) => resolve({ width, height }),
+      () => resolve(null)
+    );
+  });
+}
+
+/**
  * 사진을 서버의 Claude 분석 프록시(api/analyze-photo.ts)로 보내 도메인별 간단 지표를
  * Entry.metrics 형태로 반환한다. 베이스 URL 미설정, 네트워크 오류, 서버 오류 등 어떤
  * 이유로든 실패하면 null을 반환한다 — 호출부는 이 경우 분석 없이 사진만 저장해야 하며,
@@ -34,7 +51,7 @@ export async function analyzePhoto(
   imageUri: string,
   domain: Domain,
   previousEntries: Entry[]
-): Promise<Record<string, number | string> | null> {
+): Promise<Entry['metrics'] | null> {
   // 아래 각 실패 지점에 남기는 console.warn은 "왜 이번 기록에 AI 분석이 안 붙었는지"를
   // Expo Go 로그에서 바로 확인할 수 있게 하기 위한 것 — 이 함수는 어떤 이유로든 절대
   // throw하지 않고 null만 반환해야 한다는 계약은 그대로다.
@@ -49,6 +66,8 @@ export async function analyzePhoto(
     return null;
   }
 
+  const size = await getImageSize(imageUri);
+
   try {
     const response = await fetch(`${API_BASE_URL}/api/analyze-photo`, {
       method: 'POST',
@@ -58,6 +77,8 @@ export async function analyzePhoto(
         mediaType: imageMediaType(imageUri),
         domain,
         previousEntries,
+        imageWidth: size?.width,
+        imageHeight: size?.height,
       }),
     });
     if (!response.ok) {
@@ -65,7 +86,7 @@ export async function analyzePhoto(
       return null;
     }
 
-    const data = (await response.json()) as { metrics: Record<string, number | string> | null };
+    const data = (await response.json()) as { metrics: Entry['metrics'] | null };
     if (!data.metrics) {
       console.warn('[analyzePhoto] 서버가 metrics: null을 반환했습니다 (미지원 도메인이거나 서버 쪽 분석 실패).');
     }
